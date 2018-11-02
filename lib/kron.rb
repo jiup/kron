@@ -1,4 +1,4 @@
-require "kron/version"
+require 'kron/version'
 
 module Kron
   class Error < StandardError; end

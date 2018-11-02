@@ -1,0 +1,2 @@
+class KronCli
+end

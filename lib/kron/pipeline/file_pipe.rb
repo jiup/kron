@@ -1,0 +1,2 @@
+class FilePipe < Pipe
+end
