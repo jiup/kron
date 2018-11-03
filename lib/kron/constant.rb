@@ -1,5 +1,3 @@
-require 'digest'
-
 KRON_BASE = '.kron/'.freeze
 INDEX_FILE = "#{KRON_BASE}index".freeze
 STAGE_FILE = "#{KRON_BASE}stage".freeze
