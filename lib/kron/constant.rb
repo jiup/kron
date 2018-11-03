@@ -1,8 +1,9 @@
 require 'digest'
 
-INDEX_FILE = 'index'.freeze
-STAGE_FILE = 'stage'.freeze
-REV_FILE = 'rev'.freeze
-MANIFEST_DIR = 'manifest/'.freeze
-CHANGESET_DIR = 'changeset/'.freeze
-OBJECTS_BASE = 'objects/'.freeze
+KRON_BASE = '.kron/'.freeze
+INDEX_FILE = "#{KRON_BASE}index".freeze
+STAGE_FILE = "#{KRON_BASE}stage".freeze
+REV_FILE = "#{KRON_BASE}rev".freeze
+MANIFEST_DIR = "#{KRON_BASE}manifest/".freeze
+CHANGESET_DIR = "#{KRON_BASE}changeset/".freeze
+OBJECTS_BASE = "#{KRON_BASE}objects/".freeze
