@@ -1,9 +1,13 @@
-module RevAccessor
-  def load_rev
-    raise NotImplementedError
-  end
+module Kron
+  module Accessor
+    module RevAccessor
+      def load_rev
+        raise NotImplementedError
+      end
 
-  def sync_rev
-    raise NotImplementedError
+      def sync_rev
+        raise NotImplementedError
+      end
+    end
   end
 end

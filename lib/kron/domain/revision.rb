@@ -1,18 +1,22 @@
-require_relative '../../../lib/kron/accessor/manifest_accessor'
-require_relative '../../../lib/kron/accessor/changeset_accessor'
+require 'kron/accessor/manifest_accessor'
+require 'kron/accessor/changeset_accessor'
 
-class Revision
-  include ChangesetAccessor
-  include ManifestAccessor
+module Kron
+  module Domain
+    class Revision
+      include Kron::Accessor::ChangesetAccessor
+      include Kron::Accessor::ManifestAccessor
 
-  attr_accessor :p_id, :id, :token
-  attr_writer :manifest, :changeset
+      attr_accessor :p_id, :id, :token
+      attr_writer :manifest, :changeset
 
-  def manifest
-    manifest ||= load_manifest(id) unless id.nil?
-  end
+      def manifest
+        manifest ||= load_manifest(id) unless id.nil?
+      end
 
-  def changeset
-    changeset ||= load_changeset(id) unless id.nil?
+      def changeset
+        changeset ||= load_changeset(id) unless id.nil?
+      end
+    end
   end
 end

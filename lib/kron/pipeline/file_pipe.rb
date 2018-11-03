@@ -1,2 +1,0 @@
-class FilePipe < Pipe
-end
