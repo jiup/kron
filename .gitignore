@@ -7,3 +7,6 @@
 /tmp/
 .idea/
 Gemfile.lock
+kron_test/
+playground/
+.gitignore
