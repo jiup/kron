@@ -21,7 +21,6 @@ module Kron
       end
 
       def put(path)
-        p path
         @added_files<<path unless in_stage?(path)
       end
 

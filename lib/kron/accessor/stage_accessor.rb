@@ -20,7 +20,6 @@ module Kron
       def load_stage
         stg = Kron::Domain::Stage.new
         Zlib::Inflate.inflate(File.read(STAGE_PATH)).each_line do |line|
-          p line
           stg.put(line.chop)
         end
         stg
