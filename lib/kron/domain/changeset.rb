@@ -1,17 +1,20 @@
 module Kron
   module Domain
     class Changeset
-      attr_accessor :commit_message, :timestamp, :account, :username, :added_files, :modified_files, :deleted_files
+      attr_accessor :commit_message, :timestamp, :author, :added_files, :modified_files, :deleted_files
       attr_reader :revid
     def initialize(revid)
       @revid = revid
-      @commit_message = @account = @username = ""
+      @commit_message = @author = ""
       @timestamp = Time.now.asctime
       @added_files = @modified_files = @deleted_files = []
     end
 
       def put(param,value)
         raise StandardError, "Cannot find this attribute in changeset!" unless instance_variable_get(param)
+        if param === /[a-zA-Z]_files/
+          value = value.split(" ")
+        end
        instance_variable_set(param,value)
       end
 
@@ -20,6 +23,10 @@ module Kron
           value = instance_variable_get(ivar)
           yield ivar, value
         end
+      end
+
+      def get(param)
+        instance_variable(param)
       end
     end
   end

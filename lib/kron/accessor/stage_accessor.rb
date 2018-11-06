@@ -1,47 +1,38 @@
 require '../domain/stage'
-require 'base64'
+require_relative '../domain/stage'
+require 'zlib'
+require 'fileutils'
+
 module Kron
   module Accessor
     module StageAccessor
-      def load_stage(stage, file, blk)
-        # file valid?
-        unless File::exist?(file)
-          raise IOError
-        end
-        lines = IO.readlines(file)
-        #raise Warning
-        stage.clear_stage
-        lines.each do |line|
-          if blk != nil
-            line = blk.call(line)
-          end
-          stage.add_to_stage(line)
-        end
-        stage
+
+      def init_file(overwrite = false)
+        raise StandardError, 'stage already exists' if !overwrite && File.exist?(STAGE_PATH)
+        File.new(STAGE_PATH)
       end
 
-      def sync_stage(dst,source)
-        unless type(dst).kind_of?("Stage") or type(source).kind_of?("Stage")
-          raise TypeError
-        end
-        source.each_stage do |stage|
-          dst.add_to_stage(stage) unless dst.in_stage?(stage)
-        end
-        dst
+      def remove_file
+        File.delete(STAGE_PTH)
       end
 
-      def from_stage(file,stage)
-        unless File::exist?(file)
-          raise Warning
+      def load_stage
+        stg = Kron::Domain::Stage.new
+        Zlib::Inflate.inflate(File.read(STAGE_PATH)).each_line do |line|
+          stg.put(line.chop.split(" "))
         end
-        File.open(file, "w") do |aFile|
-          stage.each_stage do |stage|
-           #compress line
-           aFile.syswrite(stage)
-          end
-        end
+        stg
       end
 
+      def sync_stage(stg)
+        f = File.open(STAGE_PATH, "w")
+        line = ""
+        stg.each_item do |item|
+          line += item + "\n"
+        end
+        f.syswrite(Zlib::Deflate.deflate(line))
+        f.close
+      end
     end
   end
 end
