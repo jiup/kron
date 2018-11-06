@@ -25,6 +25,6 @@ module Kron
   end
 end
 
-a = Kron::Domain::Changeset.new(1)
-a.put("commit_message", "time runs out")
-a.each_attr{|a,v| p a,v}
+# a = Kron::Domain::Changeset.new(1)
+# a.put("commit_message", "time runs out")
+# a.each_attr{|a,v| p a,v}
