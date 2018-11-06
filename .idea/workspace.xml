@@ -2,9 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="737bbf9c-c5a1-4ddc-b3d9-d19b7dad6f73" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/lib/kron/accessor/stage_accessor.rb" beforeDir="false" afterPath="$PROJECT_DIR$/lib/kron/accessor/stage_accessor.rb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/kron/accessor/changeset_accessor.rb" beforeDir="false" afterPath="$PROJECT_DIR$/lib/kron/accessor/changeset_accessor.rb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/kron/domain/changeset.rb" beforeDir="false" afterPath="$PROJECT_DIR$/lib/kron/domain/changeset.rb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/lib/kron/domain/stage.rb" beforeDir="false" afterPath="$PROJECT_DIR$/lib/kron/domain/stage.rb" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/kron/repository.rb" beforeDir="false" afterPath="$PROJECT_DIR$/lib/kron/repository.rb" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -14,8 +15,8 @@
   </component>
   <component name="CoverageDataManager">
     <SUITE FILE_PATH="coverage/kron@stage_accessor.rcov" NAME="stage_accessor Coverage Results" MODIFIED="1541460152218" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/lib/kron/accessor" MODULE_NAME="kron" />
-    <SUITE FILE_PATH="coverage/kron@changeset.rcov" NAME="changeset Coverage Results" MODIFIED="1541531158982" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/lib/kron/domain" MODULE_NAME="kron" />
     <SUITE FILE_PATH="coverage/kron@changeset_accessor__1_.rcov" NAME="changeset_accessor (1) Coverage Results" MODIFIED="1541534722198" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/test/accessor" MODULE_NAME="kron" />
+    <SUITE FILE_PATH="coverage/kron@changeset.rcov" NAME="changeset Coverage Results" MODIFIED="1541543077640" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/lib/kron/domain" MODULE_NAME="kron" />
     <SUITE FILE_PATH="coverage/kron@changeset_accessor.rcov" NAME="changeset_accessor Coverage Results" MODIFIED="1541534014098" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/lib/kron/accessor" MODULE_NAME="kron" />
     <SUITE FILE_PATH="coverage/kron@stage.rcov" NAME="stage Coverage Results" MODIFIED="1541538237778" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/lib/kron/domain" MODULE_NAME="kron" />
   </component>
@@ -35,24 +36,24 @@
         <counts>
           <entry key="1" value="2" />
           <entry key="js" value="1" />
-          <entry key="rb" value="36" />
+          <entry key="rb" value="40" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
           <entry key="JavaScript" value="1" />
           <entry key="PLAIN_TEXT" value="2" />
-          <entry key="Ruby" value="36" />
+          <entry key="Ruby" value="40" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="rb" value="4650" />
+          <entry key="rb" value="5133" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="Ruby" value="4650" />
+          <entry key="Ruby" value="5133" />
         </counts>
       </usages-collector>
     </session>
@@ -62,8 +63,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/lib/kron/domain/stage.rb">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="369">
-              <caret line="22" column="17" selection-start-line="22" selection-start-column="17" selection-end-line="22" selection-end-column="17" />
+            <state relative-caret-position="567">
+              <caret line="27" column="5" selection-start-line="27" selection-start-column="5" selection-end-line="27" selection-end-column="5" />
             </state>
           </provider>
         </entry>
@@ -71,26 +72,35 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/lib/kron/accessor/stage_accessor.rb">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="120">
-              <caret line="15" column="30" lean-forward="true" selection-start-line="15" selection-start-column="30" selection-end-line="15" selection-end-column="30" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/lib/kron/domain/changeset.rb">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="315">
-              <caret line="15" column="32" selection-start-line="15" selection-start-column="32" selection-end-line="15" selection-end-column="32" />
+            <state relative-caret-position="330">
+              <caret line="18" column="20" selection-start-line="18" selection-start-column="20" selection-end-line="18" selection-end-column="20" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/lib/kron/domain/changeset.rb">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="294">
+              <caret line="14" column="17" selection-start-line="14" selection-start-column="17" selection-end-line="14" selection-end-column="17" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/lib/kron/accessor/changeset_accessor.rb">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="504">
-              <caret line="24" column="41" lean-forward="true" selection-start-line="24" selection-start-column="41" selection-end-line="24" selection-end-column="41" />
+            <state relative-caret-position="654">
+              <caret line="37" column="13" lean-forward="true" selection-start-line="37" selection-start-column="13" selection-end-line="37" selection-end-column="13" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/lib/kron/repository.rb">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="315">
+              <caret line="15" lean-forward="true" selection-start-line="15" selection-end-line="15" />
             </state>
           </provider>
         </entry>
@@ -98,8 +108,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/lib/kron/accessor/manifest_accessor.rb">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-118">
-              <caret line="11" column="9" lean-forward="true" selection-start-line="7" selection-start-column="6" selection-end-line="11" selection-end-column="9" />
+            <state relative-caret-position="-44">
+              <caret line="11" column="9" selection-start-line="7" selection-start-column="6" selection-end-line="11" selection-end-column="9" />
             </state>
           </provider>
         </entry>
@@ -132,10 +142,11 @@
       <list>
         <option value="$PROJECT_DIR$/lib/kron/accessor/manifest_accessor.rb" />
         <option value="$PROJECT_DIR$/test/accessor/manifest_accessor_test.rb" />
-        <option value="$PROJECT_DIR$/lib/kron/accessor/changeset_accessor.rb" />
         <option value="$PROJECT_DIR$/test/accessor/changeset_accessor.rb" />
         <option value="$PROJECT_DIR$/lib/kron/domain/stage.rb" />
         <option value="$PROJECT_DIR$/lib/kron/accessor/stage_accessor.rb" />
+        <option value="$PROJECT_DIR$/lib/kron/repository.rb" />
+        <option value="$PROJECT_DIR$/lib/kron/accessor/changeset_accessor.rb" />
         <option value="$PROJECT_DIR$/lib/kron/domain/changeset.rb" />
       </list>
     </option>
@@ -204,21 +215,6 @@
               <item name="test" type="462c0819:PsiDirectoryNode" />
               <item name="accessor" type="462c0819:PsiDirectoryNode" />
             </path>
-            <path>
-              <item name="kron" type="b2602c69:ProjectViewProjectNode" />
-              <item name="kron" type="462c0819:PsiDirectoryNode" />
-              <item name="test" type="462c0819:PsiDirectoryNode" />
-              <item name="accessor" type="462c0819:PsiDirectoryNode" />
-              <item name=".kron" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="kron" type="b2602c69:ProjectViewProjectNode" />
-              <item name="kron" type="462c0819:PsiDirectoryNode" />
-              <item name="test" type="462c0819:PsiDirectoryNode" />
-              <item name="accessor" type="462c0819:PsiDirectoryNode" />
-              <item name=".kron" type="462c0819:PsiDirectoryNode" />
-              <item name="changeset" type="462c0819:PsiDirectoryNode" />
-            </path>
           </expand>
           <select />
         </subPane>
@@ -243,7 +239,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Ruby.stage">
+  <component name="RunManager" selected="Ruby.changeset">
     <configuration name="changeset" type="RubyRunConfigurationType" factoryName="Ruby" temporary="true">
       <module name="kron" />
       <RUBY_RUN_CONFIG NAME="RUBY_ARGS" VALUE="" />
@@ -343,10 +339,10 @@
     </list>
     <recent_temporary>
       <list>
+        <item itemvalue="Ruby.changeset" />
         <item itemvalue="Ruby.stage" />
         <item itemvalue="Ruby.changeset_accessor (1)" />
         <item itemvalue="Ruby.changeset_accessor" />
-        <item itemvalue="Ruby.changeset" />
         <item itemvalue="Ruby.stage_accessor" />
       </list>
     </recent_temporary>
@@ -366,12 +362,12 @@
       <workItem from="1541443233323" duration="2872000" />
       <workItem from="1541463906295" duration="9243000" />
       <workItem from="1541481386432" duration="1342000" />
-      <workItem from="1541517010776" duration="12720000" />
+      <workItem from="1541517010776" duration="16429000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="27861000" />
+    <option name="totallyTimeSpent" value="31570000" />
   </component>
   <component name="TodoView">
     <todo-panel id="selected-file">
@@ -386,12 +382,12 @@
     <frame x="0" y="0" width="1440" height="900" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.23247497" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.23247497" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
-      <window_info anchor="bottom" id="Run" order="2" visible="true" weight="0.3296433" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.3296433" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.399754" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -414,13 +410,7 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/lib/kron/domain/index.rb">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
     <entry file="file://$PROJECT_DIR$/lib/kron/domain/revisions.rb">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/lib/kron/repository.rb">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/lib/kron/version.rb">
@@ -438,9 +428,6 @@
           <caret line="6" column="28" selection-start-line="6" selection-start-column="20" selection-end-line="6" selection-end-column="28" />
         </state>
       </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/lib/kron/accessor/index_accessor.rb">
-      <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/lib/kron/cli.rb">
       <provider selected="true" editor-type-id="text-editor" />
@@ -490,38 +477,58 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/lib/kron/domain/stage.rb">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="369">
-          <caret line="22" column="17" selection-start-line="22" selection-start-column="17" selection-end-line="22" selection-end-column="17" />
-        </state>
-      </provider>
+    <entry file="file://$PROJECT_DIR$/lib/kron/domain/index.rb">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lib/kron/accessor/index_accessor.rb">
+      <provider selected="true" editor-type-id="text-editor" />
     </entry>
     <entry file="file://$PROJECT_DIR$/lib/kron/accessor/manifest_accessor.rb">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-118">
-          <caret line="11" column="9" lean-forward="true" selection-start-line="7" selection-start-column="6" selection-end-line="11" selection-end-column="9" />
+        <state relative-caret-position="-44">
+          <caret line="11" column="9" selection-start-line="7" selection-start-column="6" selection-end-line="11" selection-end-column="9" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lib/kron/domain/stage.rb">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="567">
+          <caret line="27" column="5" selection-start-line="27" selection-start-column="5" selection-end-line="27" selection-end-column="5" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/lib/kron/accessor/stage_accessor.rb">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="120">
-          <caret line="15" column="30" lean-forward="true" selection-start-line="15" selection-start-column="30" selection-end-line="15" selection-end-column="30" />
+        <state relative-caret-position="330">
+          <caret line="18" column="20" selection-start-line="18" selection-start-column="20" selection-end-line="18" selection-end-column="20" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/lib/kron/domain/changeset.rb">
+    <entry file="file://$PROJECT_DIR$/lib/kron/repository.rb">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="315">
-          <caret line="15" column="32" selection-start-line="15" selection-start-column="32" selection-end-line="15" selection-end-column="32" />
+          <caret line="15" lean-forward="true" selection-start-line="15" selection-end-line="15" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$APPLICATION_HOME_DIR$/rubystubs25/object.rb">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="167">
+          <caret line="531" column="8" selection-start-line="531" selection-start-column="8" selection-end-line="531" selection-end-column="8" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/lib/kron/accessor/changeset_accessor.rb">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="504">
-          <caret line="24" column="41" lean-forward="true" selection-start-line="24" selection-start-column="41" selection-end-line="24" selection-end-column="41" />
+        <state relative-caret-position="654">
+          <caret line="37" column="13" lean-forward="true" selection-start-line="37" selection-start-column="13" selection-end-line="37" selection-end-column="13" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lib/kron/domain/changeset.rb">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="294">
+          <caret line="14" column="17" selection-start-line="14" selection-start-column="17" selection-end-line="14" selection-end-column="17" />
         </state>
       </provider>
     </entry>

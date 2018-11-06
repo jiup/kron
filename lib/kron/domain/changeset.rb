@@ -12,7 +12,7 @@ module Kron
 
       def put(param,value)
         raise StandardError, "Cannot find this attribute in changeset!" unless instance_variable_get(param)
-        if param === /[a-zA-Z]_files/
+        if param =~ /@*_files/
           value = value.split(" ")
         end
        instance_variable_set(param,value)
@@ -28,10 +28,28 @@ module Kron
       def get(param)
         instance_variable(param)
       end
+
+      def to_s
+        message = ""
+        instance_variables.each do |ivar|
+          lines = "#{ivar}" + ":"
+          if "#{ivar}" =~ /@*_files/
+            instance_variable_get(ivar).each do |val|
+              lines += val
+            end
+            elsif "#{ivar}" != "@revid"
+              lines += instance_variable_get(ivar)
+          end
+          message += lines+"\n"
+        end
+       message
+      end
+
     end
   end
 end
 
 # a = Kron::Domain::Changeset.new(1)
-# a.put("commit_message", "time runs out")
-# a.each_attr{|a,v| p a,v}
+# a.put("@commit_message", "time runs out")
+# # a.each_attr{|a,v| p a,v}
+# print a.to_s

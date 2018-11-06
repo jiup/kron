@@ -22,7 +22,7 @@ module Kron
 
         chgst = Kron::Domain::Changeset.new(rev_id)
         Zlib::Inflate.inflate(File.read(src)).each_line do |line|
-          params = line.chop.split(" ",2)
+          params = line.chop.split(":",2)
           chgst.put(params[0],params[-1])
         end
         chgst
@@ -33,7 +33,10 @@ module Kron
         f = File.open(src,"w")
         line = ""
         changeset.each_attr do |attr, value|
-          line += "#{attr}" + " " + "#{value}" + "\n"
+          if type(value).kind_of?(Array)
+            value = value.join("")
+          end
+          line += "#{attr}" + ":" + "#{value}" + "\n"
         end
         f.syswrite(Zlib::Deflate.deflate(line))
         f.close
