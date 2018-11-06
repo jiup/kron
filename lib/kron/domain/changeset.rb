@@ -11,8 +11,8 @@ module Kron
     end
 
       def put(param,value)
-        raise StandardError, "Cannot find this attribute in changeset!" unless instance_variable_get('@'+param)
-       instance_variable_set('@'+param,value)
+        raise StandardError, "Cannot find this attribute in changeset!" unless instance_variable_get(param)
+       instance_variable_set(param,value)
       end
 
       def each_attr(&blk)

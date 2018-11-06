@@ -1,6 +1,7 @@
-require '../../kron/constant'
-require '../domain/changeset'
+require_relative '../../kron/constant'
+require_relative '../domain/changeset'
 require 'zlib'
+require 'fileutils'
 
 module Kron
   module Accessor
@@ -21,15 +22,16 @@ module Kron
 
         chgst = Kron::Domain::Changeset.new(rev_id)
         Zlib::Inflate.inflate(File.read(src)).each_line do |line|
-          params = line.split
+          params = line.chop.split(" ",2)
           chgst.put(params[0],params[-1])
         end
         chgst
       end
 
       def sync_changeset(changeset)
-        src = File.join(CHANGESET_DIR, "#{@changest.rev_id}")
+        src = File.join(CHANGESET_DIR, "#{changeset.revid}")
         f = File.open(src,"w")
+        line = ""
         changeset.each_attr do |attr, value|
           line += "#{attr}" + " " + "#{value}" + "\n"
         end
