@@ -6,10 +6,10 @@ module Kron
       end
     end
 
-    class LocalFetcher < Fetcher
+    class LocalFetcher < RepoFetcher
     end
 
-    class RemoteFetcher < Fetcher
+    class RemoteFetcher < RepoFetcher
     end
   end
 end

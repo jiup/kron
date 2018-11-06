@@ -1,9 +1,18 @@
 module Kron
-  KRON_BASE = '.kron/'.freeze
-  INDEX_FILE = "#{KRON_BASE}index".freeze
-  STAGE_FILE = "#{KRON_BASE}stage".freeze
-  REV_FILE = "#{KRON_BASE}rev".freeze
-  MANIFEST_DIR = "#{KRON_BASE}manifest/".freeze
-  CHANGESET_DIR = "#{KRON_BASE}changeset/".freeze
-  OBJECTS_BASE = "#{KRON_BASE}objects/".freeze
+  # DIRECTORY PATHS
+  BASE_DIR = Dir.pwd + '/'
+  WORKING_DIR = BASE_DIR
+  KRON_DIR = "#{BASE_DIR}.kron/".freeze
+  MANIFEST_DIR = "#{KRON_DIR}manifest/".freeze
+  CHANGESET_DIR = "#{KRON_DIR}changeset/".freeze
+  OBJECTS_DIR = "#{KRON_DIR}objects/".freeze
+
+  # FILE_PATHS
+  INDEX_PATH = "#{KRON_DIR}index".freeze
+  STAGE_PATH = "#{KRON_DIR}stage".freeze
+  REV_PATH = "#{KRON_DIR}rev".freeze
+
+  # REVISION ABBREV LENGTH
+  MINIMUM_ABBREV = 4
+  DEFAULT_ABBREV = 7
 end
