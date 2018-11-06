@@ -12,20 +12,20 @@ module Kron
           when nil
             print "Fetching local repository from '#{res}'... " if verbose
             LocalFetcher.from(uri, overwrite)
+            puts 'Done' if verbose
+            return true # working directory recovery needed
           when 'http'
             print "Fetching remote repository from '#{res}'... " if verbose
             RemoteFetcher.from(uri, overwrite)
+            puts 'Done' if verbose
           else
             STDERR.puts "Protocol not support: '#{res.scheme}'"
-            return false
           end
-          puts 'Done' if verbose
         rescue StandardError => e
           puts 'Failed' if verbose
           STDERR.puts e.message
-          return false
         end
-        true
+        false # no further actions needed
       end
     end
 
