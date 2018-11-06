@@ -16,8 +16,8 @@ module Kron
        chst
       end
 
-      def sync_changeset
-        raise NotImplementedError
+      def sync_changeset(chs1,chs2)
+
       end
 
       def init_changeset
