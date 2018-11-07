@@ -9,7 +9,7 @@ module Kron
 
       def init_file(overwrite = false)
         raise StandardError, 'stage already exists' if !overwrite && File.exist?(STAGE_PATH)
-        f = File.new(STAGE_PATH,"w")
+        f = File.new(STAGE_PATH, "w")
         f.close
       end
 
@@ -19,9 +19,11 @@ module Kron
 
       def load_stage
         stg = Kron::Domain::Stage.new
-        Zlib::Inflate.inflate(File.read(STAGE_PATH)).each_line do |line|
-          params = line.chop.split(":",2)
-          stg.put(params[-1],params[0])
+        if File.exist? STAGE_PATH
+          Zlib::Inflate.inflate(File.read(STAGE_PATH)).each_line do |line|
+            params = line.chop.split(":", 2)
+            stg.put(params[-1], params[0])
+          end
         end
         stg
       end

@@ -2,10 +2,10 @@ module Kron
   module Domain
     class Index
       # map<filename, [sha-1, mt, ct, ...]>
-      attr_reader :revid
+      attr_reader :revid,:items
 
-      def initialize(revid)
-        @revid = revid
+      def initialize
+        # @revid = revid
         @items = {}
       end
 
