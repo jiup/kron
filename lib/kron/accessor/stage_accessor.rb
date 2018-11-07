@@ -20,7 +20,8 @@ module Kron
       def load_stage
         stg = Kron::Domain::Stage.new
         Zlib::Inflate.inflate(File.read(STAGE_PATH)).each_line do |line|
-          stg.put(line.chop)
+          params = line.chop.split(":",2)
+          stg.put(params[-1],params[0])
         end
         stg
       end
@@ -28,8 +29,8 @@ module Kron
       def sync_stage(stg)
         f = File.open(STAGE_PATH, "w")
         line = ""
-        stg.each_stage do |item|
-          line += item + "\n"
+        stg.each_stage do |path, head|
+          line += head + ":" + path + "\n"
         end
         f.syswrite(Zlib::Deflate.deflate(line))
         f.close

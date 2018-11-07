@@ -7,32 +7,33 @@ module Kron
   module Accessor
     module IndexAccessor
 
-      def init_file(overwrite = false)
-        raise StandardError, 'stage already exists' if !overwrite && File.exist?(INDEX_PATH)
-        f = File.new(INDEX_PATH,"w")
-        f.close
+      def init_dir(overwrite = false)
+        raise StandardError, 'directory \'index\' already exists' if !overwrite && Dir.exist?(INDEX_DIR)
+
+        FileUtils.mkdir_p INDEX_DIR
       end
 
-      def remove_file
-        File.delete(INDEX_PATH)
+      def remove_dir
+        FileUtils.remove_dir INDEX_DIR, true
       end
 
-      def load_index
-        idx = Kron::Domain::Index.new
-        Zlib::Inflate.inflate(File.read(INDEX_PATH)).each_line do |line|
-          idx.put(line.chop)
+      def load_index(revid)
+        idx = Kron::Domain::Index.new(revid)
+
+        src = File.join(INDEX_DIR, rev_id)
+        return nil unless File.file? src
+
+        Zlib::Inflate.inflate(File.read(src)).each_line do |line|
+          idx.put(row.chop.reverse.split(' ', 5).map(&:reverse).reverse)
         end
         idx
       end
 
       def sync_index(idx)
-        f = File.open(INDEX_PATH, "w")
-        line = ""
-        idx.each_index do |item|
-          line += item + "\n"
-        end
-        f.syswrite(Zlib::Deflate.deflate(line))
-        f.close
+        s_buf = StringIO.new
+        idx.each_pair { |path, attr| s_buf << "#{path} #{attr * ' '}\n" }
+        dst = File.join(MANIFEST_DIR, idx.rev_id)
+        File.open(dst, 'w+') { |f| f.write(Zlib::Deflate.deflate(s_buf.string)) }
       end
     end
   end

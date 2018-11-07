@@ -2,30 +2,34 @@ module Kron
   module Domain
     class Index
       # map<filename, [sha-1, mt, ct, ...]>
-      attr_accessor :tracked_files
+      attr_reader :revid
 
-      def initialize
-        @tracked_files = []
+      def initialize(revid)
+        @revid = revid
+        @items = {}
       end
 
-      def in_index?(path)
-        @tracked_files.one?(path)
-      end
-
-      def index_empty?
-        @tracked_files.empty?
-      end
-
-      def each_index(&blk)
-        @tracked_files.each do |e|
-          yield e
+      def put(param)
+        if param.is_a? String
+          file_path = param
+          @items[file_path] = [
+              Digest::SHA1.file(file_path).hexdigest,
+              File.size(file_path),
+              File.ctime(file_path).to_i,
+              File.mtime(file_path).to_i
+          ]
+        else
+          @items[param[0]] = param.drop(1)
         end
       end
 
-      def put(path)
-        @tracked_files.push(path) if in_index?(path)
+      def each_pair(&blk)
+        @items.each_pair(&blk)
       end
 
+      def [](key)
+        @items[key]
+      end
     end
   end
 end
