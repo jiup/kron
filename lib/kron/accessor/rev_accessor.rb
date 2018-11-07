@@ -5,10 +5,10 @@ module Kron
       # path
       # @return
       # Return a revision obj
-      def load_rev(tmppath)
+      def load_rev
         # begin
-        # File.open(tmppath + REV_FILE, "r") do |aFile|
-        content = File.read(tmppath + REV_FILE)
+        # File.open(BASE_DIR + REV_FILE, "r") do |aFile|
+        content = File.read(BASE_DIR + REV_FILE)
         content = content.force_encoding("ASCII-8BIT")
         # p content
         Marshal.load(content)
@@ -18,19 +18,19 @@ module Kron
       # null
       # @return
       # state:true or false
-      def sync_rev(revisions, tmppath)
+      def sync_rev(revisions)
         content = Marshal.dump(revisions)
-        File.open( tmppath +REV_FILE, "w") do |aFile|
+        File.open( BASE_DIR +REV_FILE, "w") do |aFile|
           aFile.puts(content)
         end
       end
 
       # add a revision to revtree
-      def add_rev(tmppath)
+      def add_rev
         revision = Revision.new
         revision.id = Digest::SHA1.hexdigest revision.to_s
-        if File.exists?(tmppath +REV_FILE)
-          revisions = load_rev(tmppath)
+        if File.exists?(BASE_DIR +REV_FILE)
+          revisions = load_rev
           revision.p_id = revisions.current
           #TODO using manifest_accessor to create a new manifest
           # TODO using changeset_accessor to create a new changeset
@@ -44,7 +44,7 @@ module Kron
           revisions.current = ['master',revision.id]
           revisions.root = revision.id
         end
-        sync_rev(revisions, tmppath)
+        sync_rev(revisions)
       end
     end
   end
