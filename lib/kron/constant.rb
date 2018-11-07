@@ -4,12 +4,11 @@ module Kron
   WORKING_DIR = BASE_DIR
   KRON_DIR = "#{BASE_DIR}.kron/".freeze
   MANIFEST_DIR = "#{KRON_DIR}manifest/".freeze
-  INDEX_DIR = "#{KRON_DIR}index/".freeze
   CHANGESET_DIR = "#{KRON_DIR}changeset/".freeze
   OBJECTS_DIR = "#{KRON_DIR}objects/".freeze
 
   # FILE_PATHS
-  #INDEX_PATH = "#{KRON_DIR}index".freeze
+  INDEX_PATH = "#{KRON_DIR}index".freeze
   STAGE_PATH = "#{KRON_DIR}stage".freeze
   REV_PATH = "#{KRON_DIR}rev".freeze
 
