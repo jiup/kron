@@ -12,6 +12,7 @@ module Kron
       end
     end
     def add(file_path_list)
+
       index = load_index
       stage = load_stage
       file_path_list.each do |file_path|
@@ -27,10 +28,5 @@ module Kron
     def serve(single_pass = true)
       # TODO: serve a packed repository for remote access
     end
-
-    def add(paths, force = false)
-
-    end
-
   end
 end
