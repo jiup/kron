@@ -1,6 +1,9 @@
 #!/usr/bin/env ruby
-
+require 'pathname'
 require 'bundler/setup'
+
+$LOAD_PATH.unshift File.expand_path('../lib', File.dirname(Pathname.new(__FILE__).realpath))
+
 require 'kron'
 
 # You can add fixtures and/or initialization code here to make experimenting
