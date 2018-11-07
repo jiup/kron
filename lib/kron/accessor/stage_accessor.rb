@@ -19,7 +19,11 @@ module Kron
 
       def load_stage
         stg = Kron::Domain::Stage.new
+<<<<<<< HEAD
         if File.exist? STAGE_PATH
+=======
+          if File.exist? STAGE_PATH
+>>>>>>> 985e9edfd326462b049d485637aaf9fa6635c94b
           Zlib::Inflate.inflate(File.read(STAGE_PATH)).each_line do |line|
             params = line.chop.split(":",2)
             stg.put(params[-1],params[0])

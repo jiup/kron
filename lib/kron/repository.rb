@@ -27,5 +27,10 @@ module Kron
     def serve(single_pass = true)
       # TODO: serve a packed repository for remote access
     end
+
+    def add(paths, force = false)
+
+    end
+
   end
 end

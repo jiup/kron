@@ -3,8 +3,9 @@ module Kron
     class Stage
       attr_accessor :added_files
       def initialize
-        @added_files = {}
+      @added_files = {}
       end
+
 
       def in_stage?(path)
         @added_files.keys.one?(path)
@@ -31,4 +32,8 @@ end
 
 # stage = Kron::Domain::Stage.new
 # stage.added_files = {"a.txt"=>"A","b.txt"=>"M"}
+
 # p stage.each_stage{|k,y| p k,y}
+
+# p stage.each_stage{|k,y| p k,y}
+
