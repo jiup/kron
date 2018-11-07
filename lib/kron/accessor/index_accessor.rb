@@ -20,11 +20,11 @@ module Kron
       def load_index(revid)
         idx = Kron::Domain::Index.new(revid)
 
-        src = File.join(INDEX_DIR, rev_id)
+        src = File.join(INDEX_DIR, revid)
         return nil unless File.file? src
 
         Zlib::Inflate.inflate(File.read(src)).each_line do |line|
-          idx.put(row.chop.reverse.split(' ', 5).map(&:reverse).reverse)
+          idx.put(line.chop.reverse.split(' ', 5).map(&:reverse).reverse)
         end
         idx
       end
@@ -32,7 +32,7 @@ module Kron
       def sync_index(idx)
         s_buf = StringIO.new
         idx.each_pair { |path, attr| s_buf << "#{path} #{attr * ' '}\n" }
-        dst = File.join(MANIFEST_DIR, idx.rev_id)
+        dst = File.join(INDEX_DIR, idx.revid)
         File.open(dst, 'w+') { |f| f.write(Zlib::Deflate.deflate(s_buf.string)) }
       end
     end

@@ -1,3 +1,5 @@
+require 'digest'
+
 module Kron
   module Domain
     class Index
