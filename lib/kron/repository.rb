@@ -18,6 +18,8 @@ module Kron
         index.put(file_path)
         stage.put(file_path,"A")
       end
+      sync_index(index)
+      sync_stage(stage)
       # index.each_pair do |filename, hash|
       #
       # end
