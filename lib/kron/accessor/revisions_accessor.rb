@@ -24,8 +24,6 @@ module Kron
           revisions
         end
 
-
-
       end
 
       # @param
