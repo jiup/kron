@@ -51,21 +51,18 @@ module Kron
       stage = load_stage
       file_path_list.each do |file_path|
         if index.in_index? file_path
-          path = index[file_path][0]
+          path = STAGE_DIR+index[file_path][0]
           index.remove(file_path)
         end
         if stage.in_stage? file_path && stage.added_files[file_path] == 'A'
           stage.remove(file_path)
+          FileUtils.rm_f path
           # internal logic : file_path is in stage no matter it is "A" or "M" it must in index. so path must be initialized before use
-          p path
-          FileUtils.remove path
+
         elsif stage.in_stage? file_path && stage.added_files[file_path] == 'M'
-          p path
           stage.put(file_path,"D")
-          FileUtils.remove path
+          FileUtils.rm_f path
         end
-        # store(file_path, STAGE_DIR + Digest::SHA1.file(file_path).hexdigest)
-        # FileUtils.copy file_path, STAGE_DIR + Digest::SHA1.file(file_path).hexdigest
       end
       sync_index(index)
       sync_stage(stage)
