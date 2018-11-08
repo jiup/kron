@@ -2,9 +2,8 @@ module Kron
   module Domain
     class Changeset
       attr_accessor :commit_message, :timestamp, :author, :added_files, :modified_files, :deleted_files
-      attr_reader :revid
-    def initialize(revid)
-      @revid = revid
+      # attr_reader :revid
+    def initialize
       @commit_message = @author = ""
       @timestamp = Time.now.asctime
       @added_files = @modified_files = @deleted_files = []
@@ -26,7 +25,7 @@ module Kron
       end
 
       def get(param)
-        instance_variable(param)
+        instance_variable_get(param)
       end
 
       def to_s

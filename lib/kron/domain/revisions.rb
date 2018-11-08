@@ -9,13 +9,13 @@ module Kron
       attr_accessor :current, :heads, :root, :rev_map # :tips,  # a map<branch_name, revision_head>
       # revision = Revision.new
       # revision.id = Digest::SHA1.hexdigest revision.to_s
-      def add_revision(revision,manifest,changeset)
+      def add_revision(revision)
           revision.p_node = current[1]
           # TODO using manifest_accessor to create a new manifest
           # TODO using changeset_accessor to create a new changeset
-          sync_manifest(manifest)
-          current[1] = revision
-          heads.store(current[0],current[1])
+          # sync_manifest(manifest)
+          @current[1] = revision
+          @heads.store(current[0],current[1])
           @root = revision if @root.nil?
           rev_map.store(revision.id,revision)
       end

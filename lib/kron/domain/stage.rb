@@ -28,6 +28,9 @@ module Kron
       def remove(key)
         @added_files.delete(key)
       end
+      def each_pair(&blk)
+        @added_files.each_pair(&blk)
+      end
     end
   end
 end
