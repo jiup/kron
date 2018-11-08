@@ -28,12 +28,12 @@ module Kron
         chgst
       end
 
-      def sync_changeset(changeset)
-        src = File.join(CHANGESET_DIR, "#{changeset.revid}")
-        f = File.open(src,"w")
+      def sync_changeset(changeset,revid)
+        src = File.join(CHANGESET_DIR, "#{revid}")
+        f = File.open(src,"w+")
         line = ""
         changeset.each_attr do |attr, value|
-          if type(value).kind_of?(Array)
+          if value.is_a? Array
             value = value.join("")
           end
           line += "#{attr}" + ":" + "#{value}" + "\n"
