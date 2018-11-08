@@ -80,11 +80,8 @@ module Kron
         stage = load_stage
         # load revisions
         revisions = Kron::Accessor::StageAccessor.load_rev
-        # copy
-        # stage.each_stage do file
-        #   # FileUtils.copy file, OBJECTS_DIR + Digest::SHA1.file(file).hexdigest
-        #   store(file,OBJECTS_DIR + Digest::SHA1.file(file).hexdigest)
-        # end
+
+        # TO BE IMPROVED
         Dir.foreach(STAGE_DIR) do |dir|
           if !(dir == '.') and !(dir == '..')
             if File.exist? OBJECTS_DIR + dir
