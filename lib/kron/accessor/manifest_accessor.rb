@@ -26,8 +26,8 @@ module Kron
         mf
       end
 
-      def sync_manifest(manifest,rev_id)
-        return unless manifest.instance_of? Kron::Domain::Manifest
+      def sync_manifest(manifest)
+        return unless (manifest.instance_of? Kron::Domain::Manifest) && !manifest.rev_id.nil?
 
         s_buf = StringIO.new
         manifest.each_pair { |path, attr| s_buf << "#{path} #{attr * ' '}\n" }

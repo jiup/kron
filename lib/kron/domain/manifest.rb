@@ -5,8 +5,8 @@ module Kron
     class Manifest
       # attr_reader :rev_id
 
-      def initialize
-        # @rev_id = rev_id
+      def initialize(rev_id = nil)
+        @rev_id = rev_id
         @items = {}
       end
 
