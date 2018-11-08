@@ -6,6 +6,7 @@ module Kron
   MANIFEST_DIR = "#{KRON_DIR}manifest/".freeze
   CHANGESET_DIR = "#{KRON_DIR}changeset/".freeze
   OBJECTS_DIR = "#{KRON_DIR}objects/".freeze
+  STAGE_DIR = "#{OBJECTS_DIR}stage/".freeze
 
   # FILE_PATHS
   INDEX_PATH = "#{KRON_DIR}index".freeze

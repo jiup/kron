@@ -25,7 +25,9 @@ module Kron
         #head : M, A, D
         @added_files[path] = head unless in_stage?(path)
       end
-
+      def remove(key)
+        @added_files.delete(key)
+      end
     end
   end
 end

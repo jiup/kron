@@ -35,6 +35,9 @@ module Kron
       def in_index?(path)
         @items.keys.one?(path)
       end
+      def remove(key)
+        @items.delete(key)
+      end
     end
   end
 end

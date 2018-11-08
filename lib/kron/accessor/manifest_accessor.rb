@@ -12,7 +12,7 @@ module Kron
       end
 
       def remove_dir
-        FileUtils.remove_dir MANIFEST_DIR, true
+        FileUtils.remove_dir(MANIFEST_DIR, true)
       end
 
       def load_manifest(rev_id)
@@ -26,12 +26,12 @@ module Kron
         mf
       end
 
-      def sync_manifest(manifest)
+      def sync_manifest(manifest,rev_id)
         return unless manifest.instance_of? Kron::Domain::Manifest
 
         s_buf = StringIO.new
         manifest.each_pair { |path, attr| s_buf << "#{path} #{attr * ' '}\n" }
-        dst = File.join(MANIFEST_DIR, manifest.rev_id)
+        dst = File.join(MANIFEST_DIR, rev_id)
         File.open(dst, 'w+') { |f| f.write(Zlib::Deflate.deflate(s_buf.string)) }
       end
     end
