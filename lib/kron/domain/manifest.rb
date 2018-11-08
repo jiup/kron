@@ -3,17 +3,11 @@ require 'digest'
 module Kron
   module Domain
     class Manifest
-      attr_reader :rev_id
+      # attr_reader :rev_id
 
-      def initialize(rev_id = nil)
-        @rev_id = rev_id
+      def initialize
+        # @rev_id = rev_id
         @items = {}
-      end
-
-      def rev_id=(rev_id)
-        raise 'value reassigned' unless @rev_id.nil?
-
-        @rev_id = rev_id
       end
 
       def put(param)
