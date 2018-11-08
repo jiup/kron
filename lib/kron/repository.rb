@@ -82,16 +82,21 @@ module Kron
         revisions = Kron::Accessor::StageAccessor.load_rev
 
         # TO BE IMPROVED
-        Dir.foreach(STAGE_DIR) do |dir|
-          if !(dir == '.') and !(dir == '..')
-            if File.exist? OBJECTS_DIR + dir
-              Dir.foreach(STAGE_DIR + dir) do |file|
-                FileUtils.mv File.join(STAGE_DIR + dir, file), OBJECTS_DIR + dir, :force => true
-              end
-            else
-              FileUtils.mv (STAGE_DIR + dir), OBJECTS_DIR, :force => true
-            end
-          end
+        # Dir.foreach(STAGE_DIR) do |dir|
+        #   if !(dir == '.') and !(dir == '..')
+        #     if File.exist? OBJECTS_DIR + dir
+        #       Dir.foreach(STAGE_DIR + dir) do |file|
+        #         FileUtils.mv File.join(STAGE_DIR + dir, file), OBJECTS_DIR + dir, :force => true
+        #       end
+        #     else
+        #       FileUtils.mv (STAGE_DIR + dir), OBJECTS_DIR, :force => true
+        #     end
+        #   end
+        # end
+        Dir.glob(STAGE_DIR + '*/*').each do |file_path|
+          dst_path = OBJECTS_DIR + file_path.split('/')[-2..-1].join('/')
+          FileUtils.mkdir_p(File.dirname(dst_path))
+          FileUtils.mv file_path, dst_path, force:true
         end
         #add Manifest
         mf = Kron::Domain::Manifest.new
