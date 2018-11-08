@@ -11,11 +11,11 @@ module Kron
       attr_writer :manifest, :changeset
 
       def manifest
-        manifest ||= load_manifest(id) unless id.nil?
+        manifest ||= load_manifest(Manifest.new(id)) unless id.nil?
       end
 
       def changeset
-        changeset ||= load_changeset(id) unless id.nil?
+        changeset ||= load_changeset(Manifest.new(id)) unless id.nil?
       end
     end
   end
