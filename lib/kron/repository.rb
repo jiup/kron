@@ -2,6 +2,7 @@ require 'kron/helper/repo_fetcher'
 require 'kron/accessor/index_accessor'
 require 'kron/accessor/stage_accessor'
 require 'digest'
+require 'find'
 module Kron
   module Repository
     include Kron::Accessor::IndexAccessor
@@ -28,5 +29,34 @@ module Kron
     def serve(single_pass = true)
       # TODO: serve a packed repository for remote access
     end
+
+    def status
+      stat = {"u"=>[], "a"=>[], "m"=>[], "r"=>[]}
+
+      index = load_index
+      Find.find(KRON_DIR) do |path|
+        unless index.in_index?(path)
+          stat['u'].push(path)
+        end
+        index_sha1 = index[path][0]
+        file_sha1 = Digest::SHA1.file(file_path).hexdigest
+        if index_sha1 == file_sha1
+          stat['a'].push(path)
+        else
+          stat['m'].push(path)
+        end
+      end
+    end
+
+    def init
+      Dir.mkdir(KRON_DIR)
+      init_dir
+      Kron::Accessor::ChangesetAccessor.init_dir
+      Kron::Accessor::IndexAccessor.init_dir
+      Kron::Accessor::ManifestAccessor.init_dir
+      Kron::Accessor::StageAccessor.init_dir
+
+    end
+
   end
 end

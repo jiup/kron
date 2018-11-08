@@ -5,8 +5,7 @@ module Kron
       def initialize
       @added_files = {}
       end
-
-
+      
       def in_stage?(path)
         @added_files.keys.one?(path)
       end
