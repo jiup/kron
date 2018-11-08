@@ -120,8 +120,9 @@ module Kron
         revision.p_node = revisions.current[1]
         revision.id = Digest::SHA1.hexdigest cs.to_s + mf.to_s
         revisions.add_revision(revision)
+        mf.rev_id = revision.id
         Kron::Accessor::ChangesetAccessor.sync_changeset(cs, revision.id)
-        Kron::Accessor::ManifestAccessor.sync_manifest(mf, revision.id)
+        Kron::Accessor::ManifestAccessor.sync_manifest(mf)
         FileUtils.rm_f STAGE_PATH
       end
 

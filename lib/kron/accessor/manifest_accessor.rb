@@ -32,7 +32,7 @@ module Kron
 
         s_buf = StringIO.new
         manifest.each_pair { |path, attr| s_buf << "#{path} #{attr * ' '}\n" }
-        dst = File.join(MANIFEST_DIR, rev_id)
+        dst = File.join(MANIFEST_DIR, manifest.rev_id)
         File.open(dst, 'w+') { |f| f.write(Zlib::Deflate.deflate(s_buf.string)) }
       end
     end
