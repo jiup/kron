@@ -34,10 +34,7 @@ module Kron
       end
     end
 
-
-    # TODO: recursive
     def add(file_path, force = false, recursive = true, verbose = true)
-      # Pathspec matching
       index = load_index
       stage = load_stage
       file_paths = []
@@ -54,9 +51,8 @@ module Kron
       end
       file_paths.each do |path|
         path = Pathname.new(path).realpath.relative_path_from(Pathname.new(WORKING_DIR)).to_s
-        # if File.file? file_path
         unless File.exist? path
-          puts "Pathspec '#{path}' did not match any files" if verbose
+          puts "File '#{path}' not found." if verbose
           next
         end
         if !force && stage.include?(path)
@@ -66,7 +62,6 @@ module Kron
 
         new_hash = Digest::SHA1.file(path).hexdigest
         if index.include? path
-          stage.to_modify << path
           # p 'to_modify' + stage.to_add.to_s
           old_hash = index[path][0]
           if old_hash == new_hash
@@ -82,7 +77,6 @@ module Kron
             stage.to_delete.delete path
             stage.to_modify << path
           else
-
             stage.to_add << path
           end
         end
@@ -90,7 +84,6 @@ module Kron
         FileUtils.mkdir_p File.join(STAGE_DIR, new_hash[0..1])
         FileUtils.copy(path, File.join(STAGE_DIR, new_hash[0..1], new_hash[2..-1]))
         puts "File '#{path}' added." if verbose
-
       end
       sync_index(index)
       sync_stage(stage)
@@ -102,46 +95,51 @@ module Kron
         if recursive
           file_paths = Dir[File.join(file_path, '**', '*')].reject {|fn| File.directory?(fn)}
         else
-          raise StandardError, "not removing '#{file_path}', recursively without -r"
+          raise StandardError, "Not removing '#{file_path}', recursively without -r"
         end
       else
         file_paths << file_path
       end
       index = load_index
       stage = load_stage
-      file_paths.each do |file_path|
-        next unless index.include? file_path
-        hash = index[file_path][0]
-        if check && Digest::SHA1.file(file_path).hexdigest != hash
-          puts "File '#{file_path}' was modified, use 'kron rm -f' to delete is anyway."
+      file_paths.each do |path|
+        unless index.include? path
+          if verbose
+            puts File.exist?(path) ? "File '#{path}' is not tracked." : "File '#{path}' not found."
+          end
           next
         end
 
-        if stage.to_add? file_path
-          stage.to_add.delete file_path
+        hash = index[path][0]
+        if check && Digest::SHA1.file(path).hexdigest != hash
+          puts "File '#{path}' was modified, use 'kron rm -f' to delete is anyway."
+          next
+        end
+
+        if stage.to_add? path
+          stage.to_add.delete path
           FileUtils.rm_f File.join(STAGE_DIR, hash[0..1], hash[2..-1])
-        elsif stage.to_modify file_path
-          stage.to_modify.delete file_path
-          stage.to_delete << file_path
+        elsif stage.to_modify path
+          stage.to_modify.delete path
+          stage.to_delete << path
           FileUtils.rm_f File.join(STAGE_DIR, hash[0..1], hash[2..-1])
         end
-        index.remove file_path
+        index.remove path
         if rm
-          FileUtils.rm_f file_path
-          puts "File '#{file_path}' removed." if verbose
+          FileUtils.rm_f path
+          puts "File '#{path}' removed." if verbose
         else
-          puts "File '#{file_path}' removed from the tracking list." if verbose
+          puts "File '#{path}' removed from the tracking list." if verbose
         end
       end
       sync_index(index)
       sync_stage(stage)
-      FileUtils.rm_rf WORKING_DIR + file_path
     end
 
     def commit(message, author = nil, branch = nil, verbose = false)
+
       index = load_index
       stage = load_stage
-      p stage.nil?
 
       # TODO: check stage
 
@@ -162,6 +160,7 @@ module Kron
 
       # add Changeset
       cs = Kron::Domain::Changeset.new
+      cs.rev_id = 'new_changeset.tmp'
       stage.to_add.each {|f| cs.put('@added_files', f)}
       stage.to_modify.each {|f| cs.put('@modified_files', f)}
       stage.to_delete.each {|f| cs.put('@deleted_files', f)}
@@ -169,21 +168,26 @@ module Kron
       cs.author = author
       cs.timestamp = Time.now.to_i
 
+
       # add a revision
+
       revision = Kron::Domain::Revision.new
       revision.p_node = revisions.current[1]
+
       # revision.id = Digest::SHA1.hexdigest cs.to_s + mf.to_s # TODO: use file digest instead
-      revision.id = Digest::SHA1.hexdigest Time.now.to_s # TODO: use file digest instead
-      revisions.add_revision(revision)
-      mf.rev_id = revision.id
-      cs.rev_id = revision.id
+
       sync_changeset(cs)
       sync_manifest(mf)
+      manifest_hash = Digest::SHA1.file(MANIFEST_DIR + 'new_manifest.tmp').hexdigest
+      changeset_hash = Digest::SHA1.file(CHANGESET_DIR + 'new_changeset.tmp').hexdigest
+      rev_id = (manifest_hash.to_i(16) ^ changeset_hash.to_i(16)).to_s(16)
+
+      revision.id = rev_id # TODO: use file digest instead
+      revisions.add_revision(revision)
+      File.rename(MANIFEST_DIR + 'new_manifest.tmp',MANIFEST_DIR+rev_id)
+      File.rename(CHANGESET_DIR + 'new_changeset.tmp',CHANGESET_DIR+rev_id)
+      sync_rev(revision)
       remove_stage
-      # FileUtils.rm_f STAGE_PATH
-      # Dir.glob(STAGE_DIR + '*').each do |file|
-      #   Dir.delete file
-      # end
     end
 
     def status
