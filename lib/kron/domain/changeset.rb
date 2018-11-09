@@ -1,23 +1,31 @@
 module Kron
   module Domain
     class Changeset
-      attr_accessor :commit_message, :timestamp, :author, :added_files, :modified_files, :deleted_files
-      # attr_reader :revid
-    def initialize
-      @commit_message = @author = ""
-      @timestamp = Time.now.asctime
-      @added_files = @modified_files = @deleted_files = []
-    end
+      attr_accessor :commit_message, :timestamp, :author, :added_files,
+                    :modified_files, :deleted_files
+      attr_reader :rev_id
 
-      def put(param,value)
-        raise StandardError, "Cannot find this attribute in changeset!" unless instance_variable_get(param)
-        if param =~ /@*_files/
-          value = value.split(" ")
-        end
-       instance_variable_set(param,value)
+      def initialize(rev_id = nil)
+        @rev_id = rev_id
+        @commit_message = @author = ''
+        @timestamp = Time.now.asctime
+        @added_files = @modified_files = @deleted_files = []
       end
 
-      def each_attr(&blk)
+      def rev_id=(rev_id)
+        raise 'value reassigned' unless @rev_id.nil?
+
+        @rev_id = rev_id
+      end
+
+      def put(param, value)
+        raise StandardError, 'Cannot find this attribute in changeset!' unless instance_variable_get(param)
+
+        value = value.split(' ') if param =~ /@*_files/
+        instance_variable_set(param, value)
+      end
+
+      def each_attr
         instance_variables.each do |ivar|
           value = instance_variable_get(ivar)
           yield ivar, value
@@ -29,21 +37,20 @@ module Kron
       end
 
       def to_s
-        message = ""
+        message = ''
         instance_variables.each do |ivar|
-          lines = "#{ivar}" + ":"
-          if "#{ivar}" =~ /@*_files/
+          lines = "#{ivar}:"
+          if ivar.to_s =~ /@*_files/
             instance_variable_get(ivar).each do |val|
               lines += val
             end
-            elsif "#{ivar}" != "@revid"
-              lines += instance_variable_get(ivar)
+          elsif ivar.to_s != '@rev_id'
+            lines += instance_variable_get(ivar)
           end
-          message += lines+"\n"
+          message += lines + "\n"
         end
-       message
+        message
       end
-
     end
   end
 end
