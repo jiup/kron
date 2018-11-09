@@ -33,14 +33,17 @@ module Kron
       stage = load_stage
       file_path_list.each do |file_path|
         if index.in_index? file_path
-          stage.put(file_path, "M")
+          stage.put(file_path, 'M')
+          if stage.in_stage? file_path
+            FileUtils.rm_f File.join(STAGE_DIR + index[file_path][0][0..1], index[file_path][0][1..-1])
+          end
           index.put(file_path)
         else
           if stage.in_stage? file_path && stage.added_files[file_path] == 'D'
-            stage.put(file_path, "M")
+            stage.put(file_path, 'M')
             index.put(file_path)
           else
-            stage.put(file_path, "A")
+            stage.put(file_path, 'A')
             index.put(file_path)
           end
         end
@@ -66,7 +69,7 @@ module Kron
           # internal logic : file_path is in stage no matter it is "A" or "M" it must in index. so path must be initialized before use
 
         elsif stage.in_stage? file_path && stage.added_files[file_path] == 'M'
-          stage.put(file_path, "D")
+          stage.put(file_path, 'D')
           FileUtils.rm_f path
         end
       end
@@ -74,29 +77,16 @@ module Kron
       sync_stage(stage)
     end
 
-    def commit(massage, mode = "Normal")
-      if mode == "Normal"
+    def commit(massage, mode = 'Normal')
+      if mode == 'Normal'
         index = load_index
         stage = load_stage
         # load revisions
         revisions = Kron::Accessor::StageAccessor.load_rev
-
-        # TO BE IMPROVED
-        # Dir.foreach(STAGE_DIR) do |dir|
-        #   if !(dir == '.') and !(dir == '..')
-        #     if File.exist? OBJECTS_DIR + dir
-        #       Dir.foreach(STAGE_DIR + dir) do |file|
-        #         FileUtils.mv File.join(STAGE_DIR + dir, file), OBJECTS_DIR + dir, :force => true
-        #       end
-        #     else
-        #       FileUtils.mv (STAGE_DIR + dir), OBJECTS_DIR, :force => true
-        #     end
-        #   end
-        # end
         Dir.glob(STAGE_DIR + '*/*').each do |file_path|
           dst_path = OBJECTS_DIR + file_path.split('/')[-2..-1].join('/')
           FileUtils.mkdir_p(File.dirname(dst_path))
-          FileUtils.mv file_path, dst_path, force:true
+          FileUtils.mv file_path, dst_path, force: true
         end
         #add Manifest
         mf = Kron::Domain::Manifest.new
@@ -107,12 +97,12 @@ module Kron
         #add Changeset
         cs = Kron::Domain::Changeset.new
         stage.each_pair do |file, file_mode|
-          if file_mode == "A"
-            cs.put("@added_files", file)
-          elsif file_mode == "D"
-            cs.put("@deleted_files", file)
-          elsif file_mode == "M"
-            cs.put("@modified_files", file)
+          if file_mode == 'A'
+            cs.put('@added_files', file)
+          elsif file_mode == 'D'
+            cs.put('@deleted_files', file)
+          elsif file_mode == 'M'
+            cs.put('@modified_files', file)
           end
         end
         # add a revision
@@ -124,6 +114,9 @@ module Kron
         Kron::Accessor::ChangesetAccessor.sync_changeset(cs, revision.id)
         Kron::Accessor::ManifestAccessor.sync_manifest(mf)
         FileUtils.rm_f STAGE_PATH
+        Dir.glob(STAGE_DIR + '*').each do |file|
+          Dir.delete file
+        end
       end
 
     end
