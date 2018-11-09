@@ -5,13 +5,13 @@ require 'zlib'
 module Kron
   module Accessor
     module ManifestAccessor
-      def init_dir(overwrite = false)
+      def init_manifest_dir(overwrite = false)
         raise StandardError, 'directory \'manifest\' already exists' if !overwrite && Dir.exist?(MANIFEST_DIR)
 
         FileUtils.mkdir_p MANIFEST_DIR
       end
 
-      def remove_dir
+      def remove_manifest_dir
         FileUtils.remove_dir MANIFEST_DIR, true
       end
 
