@@ -62,11 +62,15 @@ module Kron
     command :add do |c|
       c.desc 'Overwrite if file(s) already added to stage'
       c.switch %i[f force], negatable: false
+      c.desc 'Allow recursive add when a leading directory name is given'
+      c.switch %i[r], negatable: false
       c.desc 'Suppress the output'
       c.switch %i[q quiet], negatable: false
       c.action do |_global_options, options, file_paths|
         help_now!('file_name is required') if file_paths.empty?
-        add(file_paths, options[:f], !options[:q])
+        file_paths.each do |file_path|
+          add(file_path, options[:f], options[:r], !options[:q])
+        end
       end
     end
 
@@ -83,7 +87,10 @@ module Kron
       c.switch %i[q quiet], negatable: false
       c.action do |_global_options, options, file_paths|
         help_now!('file_name is required') if file_paths.empty?
-        remove(file_paths, !options[:f], options[:r], !options[:c], !options[:q])
+        file_paths.each do |file_path|
+          remove(file_path, !options[:f], options[:r], !options[:c], !options[:q])
+        end
+
       end
     end
 

@@ -1,4 +1,5 @@
 require 'digest'
+require 'pathname'
 require 'kron/helper/repo_fetcher'
 require 'kron/accessor/index_accessor'
 require 'kron/accessor/stage_accessor'
@@ -33,56 +34,83 @@ module Kron
       end
     end
 
-    def add(file_paths, force = false, verbose = true)
+
+    # TODO: recursive
+    def add(file_path, force = false, recursive = true, verbose = true)
       # Pathspec matching
       index = load_index
       stage = load_stage
-      file_paths.each do |file_path|
-        unless File.exist? file_path
-          puts "Pathspec '#{file_path}' did not match any files" if verbose
+      file_paths = []
+      if File.directory? file_path
+        if recursive
+          file_paths = Dir[File.join(file_path, '**', '*')].reject {|fn| File.directory?(fn)}
+        else
+          Dir.foreach(file_path) do |path|
+            file_paths << path if File.file? path
+          end
+        end
+      else
+        file_paths = [file_path]
+      end
+      file_paths.each do |path|
+        path = Pathname.new(path).realpath.relative_path_from(Pathname.new(WORKING_DIR)).to_s
+        # if File.file? file_path
+        unless File.exist? path
+          puts "Pathspec '#{path}' did not match any files" if verbose
+          next
+        end
+        if !force && stage.include?(path)
+          puts "File '#{path}' has already added to stage, use 'kron add -f' to overwrite."
           next
         end
 
-        if !force && stage.include?(file_path)
-          puts "File '#{file_path}' has already added to stage, use 'kron add -f' to overwrite."
-          next
-        end
-
-        new_hash = Digest::SHA1.file(file_path).hexdigest
-        if index.include? file_path
-          old_hash = index[file_path][0]
+        new_hash = Digest::SHA1.file(path).hexdigest
+        if index.include? path
+          stage.to_modify << path
+          # p 'to_modify' + stage.to_add.to_s
+          old_hash = index[path][0]
           if old_hash == new_hash
-            puts "File '#{file_path}' unchanged, skip add." if verbose
+            puts "File '#{path}' unchanged, skip add." if verbose
             next
           end
-          if stage.to_modify? file_path
+          if stage.to_modify? path
             # multi-declared modification, delete previous stage first
             FileUtils.rm_f(File.join(STAGE_DIR, old_hash[0..1], old_hash[2..-1]))
           end
         else
-          if stage.to_delete? file_path
-            stage.to_delete.delete file_path
-            stage.to_modify << file_path
+          if stage.to_delete? path
+            stage.to_delete.delete path
+            stage.to_modify << path
           else
-            stage.to_add << file_path
+
+            stage.to_add << path
           end
         end
-        index.put file_path
+        index.put path
         FileUtils.mkdir_p File.join(STAGE_DIR, new_hash[0..1])
-        FileUtils.copy(file_path, File.join(STAGE_DIR, new_hash[0..1], new_hash[2..-1]))
-        puts "File '#{file_path}' added." if verbose
+        FileUtils.copy(path, File.join(STAGE_DIR, new_hash[0..1], new_hash[2..-1]))
+        puts "File '#{path}' added." if verbose
+
       end
       sync_index(index)
       sync_stage(stage)
     end
 
-    def remove(file_paths, check = true, recursive = true, rm = true, verbose = true)
-      # TODO: parse file_paths recursively
+    def remove(file_path, check = true, recursive = true, rm = true, verbose = true)
+      file_paths = []
+      if File.directory? file_path
+        if recursive
+          file_paths = Dir[File.join(file_path, '**', '*')].reject {|fn| File.directory?(fn)}
+        else
+          raise StandardError, "not removing '#{file_path}', recursively without -r"
+        end
+      else
+        file_paths << file_path
+      end
       index = load_index
       stage = load_stage
       file_paths.each do |file_path|
         next unless index.include? file_path
-
         hash = index[file_path][0]
         if check && Digest::SHA1.file(file_path).hexdigest != hash
           puts "File '#{file_path}' was modified, use 'kron rm -f' to delete is anyway."
@@ -107,11 +135,15 @@ module Kron
       end
       sync_index(index)
       sync_stage(stage)
+      FileUtils.rm_rf WORKING_DIR + file_path
     end
 
     def commit(message, author = nil, branch = nil, verbose = false)
       index = load_index
       stage = load_stage
+      p stage.nil?
+
+      # TODO: check stage
 
       # load Revisions
       revisions = load_rev # TODO: not implemented
@@ -123,15 +155,16 @@ module Kron
 
       # add Manifest TODO: why didn't directly copy it in disk?
       mf = Kron::Domain::Manifest.new
+      mf.rev_id = 'new_manifest.tmp'
       index.each_pair do |k, v|
         mf.put [k, v].flatten
       end
 
       # add Changeset
       cs = Kron::Domain::Changeset.new
-      stage.to_add.each { |f| cs.put('@added_files', f) }
-      stage.to_modify.each { |f| cs.put('@modified_files', f) }
-      stage.to_delete.each { |f| cs.put('@deleted_files', f) }
+      stage.to_add.each {|f| cs.put('@added_files', f)}
+      stage.to_modify.each {|f| cs.put('@modified_files', f)}
+      stage.to_delete.each {|f| cs.put('@deleted_files', f)}
       cs.commit_message = message
       cs.author = author
       cs.timestamp = Time.now.to_i
