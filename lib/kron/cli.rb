@@ -5,7 +5,7 @@ require 'kron/repository'
 require 'kron/accessor/changeset_accessor'
 require 'kron/accessor/index_accessor'
 require 'kron/accessor/manifest_accessor'
-require 'kron/accessor/rev_accessor'
+require 'kron/accessor/revisions_accessor'
 require 'kron/accessor/stage_accessor'
 require 'kron/domain/changeset'
 require 'kron/domain/index'
@@ -62,7 +62,7 @@ module Kron
     desc 'Add file contents to the index'
     arg '<file_name>', :required
     command :add do |c|
-      c.desc 'Reinitialize if a repository already exists'
+      c.desc 'Overwrite if file(s) already added to stage'
       c.switch %i[f force], negatable: false
       c.action do |_global_options, _options, args|
         help_now!('file_name is required') if args.empty?
