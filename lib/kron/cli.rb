@@ -40,11 +40,9 @@ module Kron
     command [:init, :create] do |c|
       c.desc 'Reinitialize if a repository already exists'
       c.switch %i[f force], negatable: false
-      c.action do |_global_options, options, args|
+      c.action do |global_options, options, args|
         help_now!('no arguments required') unless args.empty?
-        if !options[:f]
-          puts 'todo: default repo_init' else puts 'todo: force repo_init'
-        end
+        init(options[:f], global_options[:v])
       end
     end
 
@@ -64,11 +62,11 @@ module Kron
     command :add do |c|
       c.desc 'Overwrite if file(s) already added to stage'
       c.switch %i[f force], negatable: false
-      c.action do |_global_options, _options, args|
-        help_now!('file_name is required') if args.empty?
-        args.each do |_file_name|
-          exit_now! 'Command not implemented'
-        end
+      c.desc 'Suppress the output'
+      c.switch %i[q quiet], negatable: false
+      c.action do |_global_options, options, file_paths|
+        help_now!('file_name is required') if file_paths.empty?
+        add(file_paths, options[:f], !options[:q])
       end
     end
 
@@ -83,11 +81,9 @@ module Kron
       c.switch %i[c cached], negatable: false
       c.desc 'Suppress the output'
       c.switch %i[q quiet], negatable: false
-      c.action do |_global_options, options, args|
-        help_now!('file_name is required') if args.empty?
-        args.each do |_file_name|
-          exit_now! "Command not implemented, verbose=#{!options[:q]}"
-        end
+      c.action do |_global_options, options, file_paths|
+        help_now!('file_name is required') if file_paths.empty?
+        remove(file_paths, !options[:f], options[:r], !options[:c], !options[:q])
       end
     end
 
@@ -96,7 +92,8 @@ module Kron
       c.action do |_global_options, _options, args|
         help_now!('no arguments required') unless args.empty?
 
-        exit_now! 'Command not implemented'
+        status
+        exit_now! 'Command not fully implemented'
       end
     end
 
@@ -110,14 +107,12 @@ module Kron
       c.flag %i[b branch], arg_name: '<branch>'
       c.desc 'Specify an explicit author for the commit'
       c.flag %i[u author], arg_name: '<author>'
-      c.action do |_global_options, options, args|
+      c.action do |global_options, options, args|
         help_now!('no arguments required') unless args.empty?
         if options[:m].empty? || options[:m].first.strip.empty?
           exit_now!('please specify commit message')
         end
-
-        puts 'commit message: ' + options[:m].join('\n')
-        exit_now! "Command not implemented, verbose=#{!options[:q]}"
+        commit(options[:m].join('\n'), options[:u], options[:b], global_options[:v])
       end
     end
 
