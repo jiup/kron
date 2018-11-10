@@ -117,7 +117,7 @@ module Kron
 
         hash = index[path][0]
         if check && File.exist?(path) && Digest::SHA1.file(path).hexdigest != hash
-          puts "File '#{path}' was modified, use 'kron rm -f' to delete is anyway."
+          puts "File '#{path}' was modified, use 'kron rm -f' to delete it without check."
           next
         end
 
