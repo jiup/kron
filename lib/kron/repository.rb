@@ -144,34 +144,27 @@ module Kron
     end
 
     def commit(message, author = nil, branch = nil, verbose = false)
-
       index = load_index
       stage = load_stage
-
-      # TODO: check stage
       if stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
         raise StandardError, 'nothing to commit, working directory clean.'
       end
-
       # load Revisions
       revisions = load_rev # TODO: not implemented
       if revisions.current[0].nil?
         raise StandardError, "HEAD detached at #{revisions.current[1]}"
       end
-
       Dir.glob(STAGE_DIR + '*/*').each do |file_path|
         dst_path = OBJECTS_DIR + file_path.split('/')[-2..-1].join('/')
         FileUtils.mkdir_p(File.dirname(dst_path))
         FileUtils.mv file_path, dst_path, force: true
       end
-
       # add Manifest TODO: why didn't directly copy it in disk?
       mf = Kron::Domain::Manifest.new
       mf.rev_id = 'new_manifest.tmp'
       index.each_pair do |k, v|
         mf.put [k, v].flatten
       end
-
       # add Changeset
       cs = Kron::Domain::Changeset.new
       cs.rev_id = 'new_changeset.tmp'
@@ -181,27 +174,22 @@ module Kron
       cs.commit_message = message
       cs.author = author
       cs.timestamp = Time.now.to_i
-
-
       # add a revision
-
       revision = Kron::Domain::Revision.new
       revision.p_node = revisions.current[1]
-
-      # revision.id = Digest::SHA1.hexdigest cs.to_s + mf.to_s # TODO: use file digest instead
-
       sync_changeset(cs)
       sync_manifest(mf)
       manifest_hash = Digest::SHA1.file(MANIFEST_DIR + 'new_manifest.tmp').hexdigest
       changeset_hash = Digest::SHA1.file(CHANGESET_DIR + 'new_changeset.tmp').hexdigest
       rev_id = (manifest_hash.to_i(16) ^ changeset_hash.to_i(16)).to_s(16)
-      revision.id = rev_id # TODO: use file digest instead
+      revision.id = rev_id
       revisions.add_revision(revision)
       File.rename(MANIFEST_DIR + 'new_manifest.tmp', MANIFEST_DIR + rev_id)
       File.rename(CHANGESET_DIR + 'new_changeset.tmp', CHANGESET_DIR + rev_id)
       sync_rev(revisions)
       remove_stage
     end
+
 
     # @param [Object] b_name
     # def branch(b_name, is_delete = false)
@@ -273,6 +261,7 @@ module Kron
           raise StandardError, "untracked files #{(wd - tracked)}"
         end
       end
+
       if is_branch
         if revisions.heads.has_key?(target)
           new_branch = target
@@ -331,8 +320,12 @@ module Kron
       end
 
       rev = load_rev
-      print 'On branch'
-      puts " #{rev.current[0]}".colorize(color: :light_blue)
+      if rev.current[0].nil?
+        puts "HEAD detached at #{rev.current[1]}".colorize(color: :red)
+      else
+        print 'On branch'
+        puts " #{rev.current[0]}".colorize(color: :light_cyan)
+      end
       if rev.current[1] == rev.heads[rev.current[0]]
         puts 'Your branch is up to date.'
         puts

@@ -167,15 +167,64 @@ module Kron
       end
     end
 
-    desc 'Switch branches or restore working directory files'
-    arg '<branch_name>'
+    desc 'List, create, or delete branches'
+    arg '<branch>'
+    command :branch do |c|
+      c.desc 'List all branches'
+      c.command :list do |cc|
+        cc.action do |_global_options, _options, args|
+          help_now!('no arguments required') unless args.empty?
+          p 'list branches'
+        end
+      end
+      c.desc 'Create a branch'
+      c.arg '<branch>'
+      c.command :add do |cc|
+        cc.action do |_global_options, _options, args|
+          assert_repo_exist
+          help_now!('branch name required') unless args.length == 1
+          p "add branch #{args[0]}"
+        end
+      end
+      c.desc 'Delete a branch'
+      c.arg '<branch>'
+      c.command [:rm, :delete] do |cc|
+        cc.action do |_global_options, _options, args|
+          assert_repo_exist
+          help_now!('branch name required') unless args.length == 1
+          p "delete branch #{args[0]}"
+          exit_now! 'Command not implemented'
+        end
+      end
+      c.desc 'Rename a branch'
+      c.arg '<old_branch> <new_branch>'
+      c.command [:mv, :rename] do |cc|
+        cc.action do |_global_options, _options, args|
+          assert_repo_exist
+          help_now!('arguments <old_branch> <new_branch> required') unless args.length == 2
+          p "rename branch #{args[0]} to #{args[1]}"
+          exit_now! 'Command not implemented'
+        end
+      end
+      c.default_command :add
+    end
+
+    desc 'Switch branches and restore working directory files'
+    arg '<commit>'
     command [:checkout, :goto] do |c|
       c.desc 'Proceed even if the index or the working directory differs from HEAD'
       c.switch %i[f force], negatable: false
-      c.action do |_global_options, _options, _args|
+      c.desc 'Prepare for working on a specific <branch>'
+      c.flag %i[b branch], arg_name: '<branch>'
+      c.action do |_global_options, options, args|
         assert_repo_exist
-        checkout(_args[0])
-        # exit_now! 'Command not implemented'
+        if options[:b].nil?
+          help_now!('single argument <commit> required') if args.length != 1
+          checkout(args[0], false, options[:f])
+        else
+          help_now!('no arguments required') unless args.empty?
+          checkout(options[:b], true, options[:f])
+        end
       end
     end
 
