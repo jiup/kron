@@ -170,7 +170,9 @@ module Kron
       c.desc 'Proceed even if the index or the working directory differs from HEAD'
       c.switch %i[f force], negatable: false
       c.action do |_global_options, _options, _args|
-        exit_now! 'Command not implemented'
+        checkout(_args[0])
+        p "==========="
+        # exit_now! 'Command not implemented'
       end
     end
 
