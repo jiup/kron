@@ -230,8 +230,10 @@ module Kron
       rev = load_rev
       print 'On branch'
       puts " #{rev.current[0]}".colorize(color: :light_blue)
-      puts 'Your branch is up to date.' if rev.current[1] == rev.heads[rev.current[0]]
-      puts
+      if rev.current[1] == rev.heads[rev.current[0]]
+        puts 'Your branch is up to date.'
+        puts
+      end
       nothing_to_commit = stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
       unless nothing_to_commit
         puts 'Changes to be committed:'
