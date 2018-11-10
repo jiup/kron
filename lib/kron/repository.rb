@@ -107,7 +107,7 @@ module Kron
       index = load_index
       stage = load_stage
       file_paths.each do |path|
-        path = Pathname.new(path).realpath.relative_path_from(Pathname.new(WORKING_DIR)).to_s
+        path = Pathname.new(path).realpath.relative_path_from(Pathname.new(WORKING_DIR)).to_s if File.exist?(path)
         unless index.include? path
           if verbose
             puts File.exist?(path) ? "File '#{path}' is not tracked." : "File '#{path}' not found."
@@ -116,7 +116,7 @@ module Kron
         end
 
         hash = index[path][0]
-        if check && Digest::SHA1.file(path).hexdigest != hash
+        if check && File.exist?(path) && Digest::SHA1.file(path).hexdigest != hash
           puts "File '#{path}' was modified, use 'kron rm -f' to delete is anyway."
           next
         end
@@ -128,6 +128,8 @@ module Kron
           stage.to_modify.delete path
           stage.to_delete << path
           FileUtils.rm_f File.join(STAGE_DIR, hash[0..1], hash[2..-1])
+        else
+          stage.to_delete << path
         end
         index.remove path
         if rm
@@ -147,6 +149,9 @@ module Kron
       stage = load_stage
 
       # TODO: check stage
+      if stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
+        raise StandardError, 'nothing to commit, working directory clean.'
+      end
 
       # load Revisions
       revisions = load_rev # TODO: not implemented
@@ -196,35 +201,47 @@ module Kron
     end
 
     def status
-      wd = SortedSet.new
       index = load_index
       stage = load_stage
       tracked = Set.new
       index.each_pair { |file_path, _args| tracked << file_path }
       n_stage_modified = []
       n_stage_deleted = []
-      tracked.reject { |path| stage.include? path }.each do |p|
-        n_stage_deleted << p unless File.exist? p
-        n_stage_modified << p unless index[p][0] == Digest::SHA1.file(p).hexdigest
+      tracked.each do |p|
+        if File.exist? p
+          n_stage_modified << p unless index[p][0] == Digest::SHA1.file(p).hexdigest
+        else
+          n_stage_deleted << p
+        end
       end
+      wd = SortedSet.new
       Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
+      untracked = wd - tracked
+
+      # exclude by parsing .kronignore file
+      if File.exist? IGNORE_PATH
+        File.open(IGNORE_PATH).each do |regex|
+          untracked.delete_if do |path|
+            !regex.start_with?('#') && path.match?(regex)
+          end
+        end
+      end
 
       rev = load_rev
       print 'On branch'
       puts " #{rev.current[0]}".colorize(color: :blue)
       puts 'Your branch is up to date.' if rev.current[1] == rev.heads[rev.current[0]]
       puts
-      if stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
-        puts 'no changes added to commit (use \'kron add\' to stage changes)'
-      else
+      nothing_to_commit = stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
+      unless nothing_to_commit
         puts 'Changes to be committed:'
         puts '  (use \'kron rm -c stage\' to unstage)'
         puts
         stage.to_add.each { |f| puts "        new file: #{f}".colorize(color: :green) }
         stage.to_modify.each { |f| puts "        modified: #{f}".colorize(color: :yellow) }
         stage.to_delete.each { |f| puts "        deleted: #{f}".colorize(color: :red) }
+        puts
       end
-      puts
       unless n_stage_modified.empty? && n_stage_deleted.empty?
         puts 'Changes not staged for commit:'
         puts '  (use \'kron add <file>...\' to update what will be committed)'
@@ -234,13 +251,14 @@ module Kron
         n_stage_deleted.each { |f| puts "        deleted: #{f}".colorize(color: :red) }
         puts
       end
-      unless (wd - tracked).empty?
+      unless untracked.empty?
         puts 'Untracked files:'
         puts '  (use \'kron add <file>...\' to include in what will be committed)'
         puts
-        (wd - tracked).each { |f| puts "        #{f}".colorize(color: :red) }
+        untracked.each { |f| puts "        #{f}".colorize(color: :red) }
         puts
       end
+      puts 'no changes added to commit (use \'kron add\' to stage changes)' if nothing_to_commit
     end
 
     def serve(single_pass = true)
