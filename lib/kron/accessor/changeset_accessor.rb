@@ -1,18 +1,18 @@
-require_relative '../../kron/constant'
-require_relative '../domain/changeset'
+require 'kron/constant'
+require 'kron/domain/changeset'
 require 'zlib'
 require 'fileutils'
 
 module Kron
   module Accessor
     module ChangesetAccessor
-      def init_dir(overwrite = false)
+      def init_changeset_dir(overwrite = false)
         raise StandardError, 'directory \'changeset\' already exists' if !overwrite && Dir.exist?(CHANGESET_DIR)
 
         FileUtils.mkdir_p CHANGESET_DIR
       end
 
-      def remove_dir
+      def remove_changeset_dir
         FileUtils.remove_dir(CHANGESET_DIR, true)
       end
 

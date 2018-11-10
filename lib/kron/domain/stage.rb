@@ -1,44 +1,67 @@
+require 'digest'
+require 'set'
+
 module Kron
   module Domain
     class Stage
-      attr_accessor :added_files
+      attr_accessor :to_add, :to_modify, :to_delete
+
       def initialize
-      @added_files = {}
+        @to_add = Set.new
+        @to_modify = Set.new
+        @to_delete = Set.new
       end
 
-
-      def in_stage?(path)
-        @added_files.keys.one?(path)
+      def include?(file_path)
+        to_add?(file_path) || to_modify?(file_path) || to_delete?(file_path)
       end
 
-      def stage_empty?
-        @added_files.empty?
+      def to_add?(file_path)
+        @to_add.include? file_path
       end
 
-      def each_stage(&blk)
-        @added_files.keys.each do |k|
-          yield added_files[k],k
-        end
+      def to_modify?(file_path)
+        @to_modify.include? file_path
       end
 
-      def put(path, head)
-        #head : M, A, D
-        @added_files[path] = head unless in_stage?(path)
+      def to_delete?(file_path)
+        @to_delete.include? file_path
       end
-      def remove(key)
-        @added_files.delete(key)
+
+      def remove_all(file_path)
+        @to_add.delete file_path
+        @to_modify.delete file_path
+        @to_add.delete file_path
       end
-      def each_pair(&blk)
-        @added_files.each_pair(&blk)
-      end
+
+      # def get(arg, *args)
+      #   args ||= %w[added modified removed] unless args
+      #   args.each do |ivar|
+      #     file_hash = instance_variable_get(ivar).fetch(arg, nil)
+      #     return [arg, file_hash] if file_hash
+      #   end
+      #   nil
+      # end
+
+      # def put(path, head)
+      #   # head : @added, @modified, @removed
+      #   return nil unless %w[@added @modified @removed].one?(head)
+      #
+      #   path = File.expand_path(path)
+      #   h = Digest::SHA1.file(path).hexdigest
+      #   instance_variable_set(head, path => h)
+      # end
+
+      # def remove(path, *head)
+      #   path = File.expand_path(path)
+      #
+      #   head = %w[@added @modified @removed] if head == []
+      #   head.each do |ivar|
+      #     file_hash = instance_variable_get(ivar).fetch(path, nil)
+      #     return instance_variable_get(ivar).delete(path) if file_hash
+      #   end
+      # end
     end
   end
 end
-
-# stage = Kron::Domain::Stage.new
-# stage.added_files = {"a.txt"=>"A","b.txt"=>"M"}
-
-# p stage.each_stage{|k,y| p k,y}
-
-# p stage.each_stage{|k,y| p k,y}
 

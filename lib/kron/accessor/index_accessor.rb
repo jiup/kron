@@ -1,27 +1,25 @@
-require_relative '../../kron/constant'
-require_relative '../domain/index'
+require 'kron/constant'
+require 'kron/domain/index'
 require 'zlib'
 require 'fileutils'
 
 module Kron
   module Accessor
     module IndexAccessor
+      def init_index(overwrite = false)
+        raise StandardError, 'file \'index\' already exists' if !overwrite && File.exist?(INDEX_PATH)
 
-      def init_dir(overwrite = false)
-        raise StandardError, 'directory \'index\' already exists' if !overwrite && Dir.exist?(INDEX_PATH)
-
-        FileUtils.mkdir_p INDEX_PATH
+        File.open(INDEX_PATH, 'w+')
       end
 
-      def remove_dir
-        FileUtils.remove_dir INDEX_PATH, true
+      def remove_index
+        FileUtils.rm_f INDEX_PATH
       end
 
       def load_index
         idx = Kron::Domain::Index.new
-
         src = INDEX_PATH
-        return idx unless File.file? src
+        return idx unless File.file?(src) && File.size(src) > 0
 
         Zlib::Inflate.inflate(File.read(src)).each_line do |line|
           idx.put(line.chop.reverse.split(' ', 5).map(&:reverse).reverse)

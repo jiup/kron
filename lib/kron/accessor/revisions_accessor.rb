@@ -1,5 +1,3 @@
-require 'kron/domain/revisions'
-require 'kron/constant'
 module Kron
   module Accessor
     module RevisionsAccessor
