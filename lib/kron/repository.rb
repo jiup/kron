@@ -42,7 +42,7 @@ module Kron
       file_paths = []
       if File.directory? file_path
         if recursive
-          file_paths = Dir[File.join(file_path, '**', '*')].reject { |fn| File.directory?(fn) }
+          file_paths = Dir[File.join(file_path, '**', '*')].reject {|fn| File.directory?(fn)}
         else
           Dir.foreach(file_path) do |path|
             file_paths << path if File.file? path
@@ -97,7 +97,7 @@ module Kron
       file_paths = []
       if File.directory? file_path
         if recursive
-          file_paths = Dir[File.join(file_path, '**', '*')].reject { |fn| File.directory?(fn) }
+          file_paths = Dir[File.join(file_path, '**', '*')].reject {|fn| File.directory?(fn)}
         else
           raise StandardError, "Not removing '#{file_path}', recursively without -r"
         end
@@ -150,6 +150,9 @@ module Kron
 
       # load Revisions
       revisions = load_rev # TODO: not implemented
+      if revisions.current[0] == nil
+        raise StandardError, "HEAD detached at #{revisions.current[1]}"
+      end
       Dir.glob(STAGE_DIR + '*/*').each do |file_path|
         dst_path = OBJECTS_DIR + file_path.split('/')[-2..-1].join('/')
         FileUtils.mkdir_p(File.dirname(dst_path))
@@ -166,9 +169,9 @@ module Kron
       # add Changeset
       cs = Kron::Domain::Changeset.new
       cs.rev_id = 'new_changeset.tmp'
-      stage.to_add.each { |f| cs.put('@added_files', f) }
-      stage.to_modify.each { |f| cs.put('@modified_files', f) }
-      stage.to_delete.each { |f| cs.put('@deleted_files', f) }
+      stage.to_add.each {|f| cs.put('@added_files', f)}
+      stage.to_modify.each {|f| cs.put('@modified_files', f)}
+      stage.to_delete.each {|f| cs.put('@deleted_files', f)}
       cs.commit_message = message
       cs.author = author
       cs.timestamp = Time.now.to_i
@@ -189,10 +192,48 @@ module Kron
 
       revision.id = rev_id # TODO: use file digest instead
       revisions.add_revision(revision)
-      File.rename(MANIFEST_DIR + 'new_manifest.tmp',MANIFEST_DIR+rev_id)
-      File.rename(CHANGESET_DIR + 'new_changeset.tmp',CHANGESET_DIR+rev_id)
+      File.rename(MANIFEST_DIR + 'new_manifest.tmp', MANIFEST_DIR + rev_id)
+      File.rename(CHANGESET_DIR + 'new_changeset.tmp', CHANGESET_DIR + rev_id)
       sync_rev(revisions)
       remove_stage
+    end
+
+    def checkout(target, is_branch = false)
+      revisions = load_rev
+      if File.exist? STAGE_PATH
+        raise StandardError, 'something in stage need to commit'
+      end
+      tracked = Set.new
+      index.each_pair {|file_path, _args| tracked << file_path}
+      wd = SortedSet.new
+      Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
+      unless (wd - tracked).empty?
+        raise StandardError, "untracked files #{(wd - tracked)}"
+      end
+      if is_branch
+        if revisions.heads.has_key(target)
+          revision_id = revisions.heads[target]
+        else
+          raise StandardError, "branch #{target} not found"
+        end
+      else
+        if revisions.rev_map.has_key(target)
+          revision_id = revisions.rev_map[target]
+        else
+          raise StandardError, "revision #{target} not found"
+        end
+      end
+      mf = load_manifest(revision_id)
+      new_index = Kron::Domain::Index.new
+      mf.each_pair do |file_name, paras|
+        dir = paras[0..1]
+        file_hash = paras[2..-1]
+        File.move File.join(OBJECTS_DIR, dir, file_hash), File.join(WORKING_DIR, file_name)
+        new_index.put [file_name, paras].flatten
+      end
+      revisions.current = [nil, revision_id]
+
+
     end
 
     def status
@@ -200,14 +241,14 @@ module Kron
       index = load_index
       stage = load_stage
       tracked = Set.new
-      index.each_pair { |file_path, _args| tracked << file_path }
+      index.each_pair {|file_path, _args| tracked << file_path}
       n_stage_modified = []
       n_stage_deleted = []
-      tracked.reject { |path| stage.include? path }.each do |p|
+      tracked.reject {|path| stage.include? path}.each do |p|
         n_stage_deleted << p unless File.exist? p
         n_stage_modified << p unless index[p][0] == Digest::SHA1.file(p).hexdigest
       end
-      Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
+      Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
 
       rev = load_rev
       print 'On branch'
@@ -220,9 +261,9 @@ module Kron
         puts 'Changes to be committed:'
         puts '  (use \'kron rm -c stage\' to unstage)'
         puts
-        stage.to_add.each { |f| puts "        new file: #{f}".colorize(color: :green) }
-        stage.to_modify.each { |f| puts "        modified: #{f}".colorize(color: :yellow) }
-        stage.to_delete.each { |f| puts "        deleted: #{f}".colorize(color: :red) }
+        stage.to_add.each {|f| puts "        new file: #{f}".colorize(color: :green)}
+        stage.to_modify.each {|f| puts "        modified: #{f}".colorize(color: :yellow)}
+        stage.to_delete.each {|f| puts "        deleted: #{f}".colorize(color: :red)}
       end
       puts
       unless n_stage_modified.empty? && n_stage_deleted.empty?
@@ -230,15 +271,15 @@ module Kron
         puts '  (use \'kron add <file>...\' to update what will be committed)'
         puts '  (use \'kron checkout -f\' to discard changes in working directory)'
         puts
-        n_stage_modified.each { |f| puts "        modified: #{f}".colorize(color: :red) }
-        n_stage_deleted.each { |f| puts "        deleted: #{f}".colorize(color: :red) }
+        n_stage_modified.each {|f| puts "        modified: #{f}".colorize(color: :red)}
+        n_stage_deleted.each {|f| puts "        deleted: #{f}".colorize(color: :red)}
         puts
       end
       unless (wd - tracked).empty?
         puts 'Untracked files:'
         puts '  (use \'kron add <file>...\' to include in what will be committed)'
         puts
-        (wd - tracked).each { |f| puts "        #{f}".colorize(color: :red) }
+        (wd - tracked).each {|f| puts "        #{f}".colorize(color: :red)}
         puts
       end
     end
