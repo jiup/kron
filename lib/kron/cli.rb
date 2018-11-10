@@ -174,6 +174,7 @@ module Kron
       c.command :list do |cc|
         cc.action do |_global_options, _options, args|
           help_now!('no arguments required') unless args.empty?
+          p list_branch()
           p 'list branches'
         end
       end

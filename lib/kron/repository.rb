@@ -210,6 +210,7 @@ module Kron
       end
 
       revisions.heads.store(b_name, revisions.current[1])
+      sync_rev revisions
     end
 
     def list_branch()
@@ -243,6 +244,7 @@ module Kron
 
       revisions.heads.store(new_name,revisions.heads[old_name])
       revisions.heads.delete(old_name)
+      sync_rev revisions
     end
 
     def checkout(target, is_branch = false, force = false)
@@ -265,7 +267,8 @@ module Kron
       if is_branch
         if revisions.heads.has_key?(target)
           new_branch = target
-          revision_id = revisions.heads[target]
+          revision_id = revisions.heads[target].id
+
         else
           raise StandardError, "branch '#{target}' not found"
         end
@@ -279,6 +282,7 @@ module Kron
       end
       mf = load_manifest(revision_id)
       new_index = Kron::Domain::Index.new
+
       # based on mf recover working directory and index.
       mf.each_pair do |file_name, paras|
         dir = paras[0][0..1]
@@ -287,7 +291,9 @@ module Kron
         FileUtils.cp File.join(OBJECTS_DIR, dir, file_hash), File.join(WORKING_DIR, file_name)
         new_index.put [file_name, paras].flatten
       end
+
       revisions.current = [new_branch, revision_id]
+
       sync_index(new_index)
       sync_rev(revisions)
     end
