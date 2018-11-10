@@ -186,7 +186,7 @@ module Kron
       revisions.add_revision(revision)
       File.rename(MANIFEST_DIR + 'new_manifest.tmp',MANIFEST_DIR+rev_id)
       File.rename(CHANGESET_DIR + 'new_changeset.tmp',CHANGESET_DIR+rev_id)
-      sync_rev(revision)
+      sync_rev(revisions)
       remove_stage
     end
 
@@ -215,5 +215,49 @@ module Kron
     def serve(single_pass = true)
       # TODO: serve a packed repository for remote access
     end
+
+    def log(revision = nil, branch = nil)
+      return nil if !branch && !revision
+
+      cs = Kron::Domain::Changeset.new
+      cs.rev_id = revision
+      cs = load_changeset(cs)
+      if cs
+        puts cs.to_s.string
+      else
+        puts "unmatched revision id"
+      end
+    end
+
+    def logs(branch = nil)
+      buffer = StringIO.new
+      Dir.glob(CHANGESET_DIR + '*').each do |file_path|
+        buffer.puts log(file_path.split('/')[-1])
+      end
+      puts buffer.string
+    end
+
+    def cat(rev_id = nil, branch = nil, paths)
+      return nil unless rev_id
+
+      buffer = StringIO.new
+      mf = load_manifest(rev_id)
+      raise StandardError, 'unmatched revision id' unless mf
+
+      paths.each do |path|
+        buffer.puts "#{path}:\n"
+        hash = mf[path]
+        src = File.join(OBJECTS_DIR + [hash[0][0..1], hash[0][2..-1]].join('/')) if hash
+        if hash && File.exist?(src)
+          File.read(src).each_line do |row|
+            buffer.puts row
+          end
+        else
+          buffer.puts 'File Not Found.'
+        end
+      end
+      puts buffer.string
+    end
+
   end
 end
