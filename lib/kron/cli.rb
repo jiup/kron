@@ -193,6 +193,7 @@ module Kron
           assert_repo_exist
           help_now!('branch name required') unless args.length == 1
           p "delete branch #{args[0]}"
+          exit_now! 'Command not implemented'
         end
       end
       c.desc 'Rename a branch'
@@ -202,6 +203,7 @@ module Kron
           assert_repo_exist
           help_now!('arguments <old_branch> <new_branch> required') unless args.length == 2
           p "rename branch #{args[0]} to #{args[1]}"
+          exit_now! 'Command not implemented'
         end
       end
       c.default_command :add
