@@ -100,7 +100,6 @@ module Kron
         help_now!('no arguments required') unless args.empty?
 
         status
-        exit_now! 'Command not fully implemented'
       end
     end
 

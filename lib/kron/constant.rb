@@ -12,6 +12,7 @@ module Kron
   INDEX_PATH = "#{KRON_DIR}index".freeze
   STAGE_PATH = "#{KRON_DIR}stage".freeze
   REV_PATH = "#{KRON_DIR}rev".freeze
+  IGNORE_PATH = "#{WORKING_DIR}.kronignore".freeze
 
   # REVISION ABBREV LENGTH
   MINIMUM_ABBREV = 4
