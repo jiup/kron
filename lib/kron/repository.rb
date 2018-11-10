@@ -87,7 +87,7 @@ module Kron
         index.put path
         FileUtils.mkdir_p File.join(STAGE_DIR, new_hash[0..1])
         FileUtils.copy(path, File.join(STAGE_DIR, new_hash[0..1], new_hash[2..-1]))
-        puts "File '#{path}' added." if verbose
+        puts "File '#{path}' added to stage." if verbose
       end
       sync_index(index)
       sync_stage(stage)
@@ -229,7 +229,7 @@ module Kron
 
       rev = load_rev
       print 'On branch'
-      puts " #{rev.current[0]}".colorize(color: :blue)
+      puts " #{rev.current[0]}".colorize(color: :light_blue)
       puts 'Your branch is up to date.' if rev.current[1] == rev.heads[rev.current[0]]
       puts
       nothing_to_commit = stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
@@ -263,6 +263,10 @@ module Kron
 
     def serve(single_pass = true)
       # TODO: serve a packed repository for remote access
+    end
+
+    def assert_repo_exist
+      raise LoadError, 'not a kron repository (run \'kron init\' to create a new repo)' unless Dir.exist?(KRON_DIR)
     end
   end
 end
