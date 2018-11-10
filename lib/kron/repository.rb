@@ -1,11 +1,13 @@
 require 'digest'
 require 'pathname'
+require 'colorize'
 require 'kron/helper/repo_fetcher'
 require 'kron/accessor/index_accessor'
 require 'kron/accessor/stage_accessor'
 require 'kron/accessor/revisions_accessor'
 require 'kron/accessor/manifest_accessor'
 require 'kron/accessor/changeset_accessor'
+require 'kron/domain/revisions'
 require 'kron/domain/revision'
 require 'kron/domain/manifest'
 
@@ -40,7 +42,7 @@ module Kron
       file_paths = []
       if File.directory? file_path
         if recursive
-          file_paths = Dir[File.join(file_path, '**', '*')].reject {|fn| File.directory?(fn)}
+          file_paths = Dir[File.join(file_path, '**', '*')].reject { |fn| File.directory?(fn) }
         else
           Dir.foreach(file_path) do |path|
             file_paths << path if File.file? path
@@ -71,6 +73,8 @@ module Kron
           if stage.to_modify? path
             # multi-declared modification, delete previous stage first
             FileUtils.rm_f(File.join(STAGE_DIR, old_hash[0..1], old_hash[2..-1]))
+          else
+            stage.to_modify << path
           end
         else
           if stage.to_delete? path
@@ -93,7 +97,7 @@ module Kron
       file_paths = []
       if File.directory? file_path
         if recursive
-          file_paths = Dir[File.join(file_path, '**', '*')].reject {|fn| File.directory?(fn)}
+          file_paths = Dir[File.join(file_path, '**', '*')].reject { |fn| File.directory?(fn) }
         else
           raise StandardError, "Not removing '#{file_path}', recursively without -r"
         end
@@ -103,6 +107,7 @@ module Kron
       index = load_index
       stage = load_stage
       file_paths.each do |path|
+        path = Pathname.new(path).realpath.relative_path_from(Pathname.new(WORKING_DIR)).to_s
         unless index.include? path
           if verbose
             puts File.exist?(path) ? "File '#{path}' is not tracked." : "File '#{path}' not found."
@@ -119,7 +124,7 @@ module Kron
         if stage.to_add? path
           stage.to_add.delete path
           FileUtils.rm_f File.join(STAGE_DIR, hash[0..1], hash[2..-1])
-        elsif stage.to_modify path
+        elsif stage.to_modify? path
           stage.to_modify.delete path
           stage.to_delete << path
           FileUtils.rm_f File.join(STAGE_DIR, hash[0..1], hash[2..-1])
@@ -161,9 +166,9 @@ module Kron
       # add Changeset
       cs = Kron::Domain::Changeset.new
       cs.rev_id = 'new_changeset.tmp'
-      stage.to_add.each {|f| cs.put('@added_files', f)}
-      stage.to_modify.each {|f| cs.put('@modified_files', f)}
-      stage.to_delete.each {|f| cs.put('@deleted_files', f)}
+      stage.to_add.each { |f| cs.put('@added_files', f) }
+      stage.to_modify.each { |f| cs.put('@modified_files', f) }
+      stage.to_delete.each { |f| cs.put('@deleted_files', f) }
       cs.commit_message = message
       cs.author = author
       cs.timestamp = Time.now.to_i
@@ -186,30 +191,56 @@ module Kron
       revisions.add_revision(revision)
       File.rename(MANIFEST_DIR + 'new_manifest.tmp',MANIFEST_DIR+rev_id)
       File.rename(CHANGESET_DIR + 'new_changeset.tmp',CHANGESET_DIR+rev_id)
-      sync_rev(revision)
+      sync_rev(revisions)
       remove_stage
     end
 
     def status
-      puts "index:     #{load_index.items}"
-      puts "to_add:    #{load_stage.to_add}"
-      puts "to_modify: #{load_stage.to_modify}"
-      puts "to_remove: #{load_stage.to_delete}"
-      # stat = {"u"=>[], "a"=>[], "m"=>[], "r"=>[]}
-      #
-      # index = load_index
-      # Find.find(KRON_DIR) do |path|
-      #   unless index.include?(path)
-      #     stat['u'].push(path)
-      #   end
-      #   index_sha1 = index[path][0]
-      #   file_sha1 = Digest::SHA1.file(file_path).hexdigest
-      #   if index_sha1 == file_sha1
-      #     stat['a'].push(path)
-      #   else
-      #     stat['m'].push(path)
-      #   end
-      # end
+      wd = SortedSet.new
+      index = load_index
+      stage = load_stage
+      tracked = Set.new
+      index.each_pair { |file_path, _args| tracked << file_path }
+      n_stage_modified = []
+      n_stage_deleted = []
+      tracked.reject { |path| stage.include? path }.each do |p|
+        n_stage_deleted << p unless File.exist? p
+        n_stage_modified << p unless index[p][0] == Digest::SHA1.file(p).hexdigest
+      end
+      Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
+
+      rev = load_rev
+      print 'On branch'
+      puts " #{rev.current[0]}".colorize(color: :blue)
+      puts 'Your branch is up to date.' if rev.current[1] == rev.heads[rev.current[0]]
+      puts
+      if stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
+        puts 'no changes added to commit (use \'kron add\' to stage changes)'
+      else
+        puts 'Changes to be committed:'
+        puts '  (use \'kron rm -c stage\' to unstage)'
+        puts
+        stage.to_add.each { |f| puts "        new file: #{f}".colorize(color: :green) }
+        stage.to_modify.each { |f| puts "        modified: #{f}".colorize(color: :yellow) }
+        stage.to_delete.each { |f| puts "        deleted: #{f}".colorize(color: :red) }
+      end
+      puts
+      unless n_stage_modified.empty? && n_stage_deleted.empty?
+        puts 'Changes not staged for commit:'
+        puts '  (use \'kron add <file>...\' to update what will be committed)'
+        puts '  (use \'kron checkout -f\' to discard changes in working directory)'
+        puts
+        n_stage_modified.each { |f| puts "        modified: #{f}".colorize(color: :red) }
+        n_stage_deleted.each { |f| puts "        deleted: #{f}".colorize(color: :red) }
+        puts
+      end
+      unless (wd - tracked).empty?
+        puts 'Untracked files:'
+        puts '  (use \'kron add <file>...\' to include in what will be committed)'
+        puts
+        (wd - tracked).each { |f| puts "        #{f}".colorize(color: :red) }
+        puts
+      end
     end
 
     def serve(single_pass = true)
