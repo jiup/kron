@@ -6,7 +6,7 @@ module Kron
       include Kron::Accessor::RevisionsAccessor
       include Kron::Accessor::ManifestAccessor
       # current:[branch_name,revision]
-      attr_accessor :current, :heads, :root, :rev_map # :tips,  # a map<branch_name, revision_head>
+      attr_accessor :current, :heads, :branch_hook, :rev_map # :tips,  # a map<branch_name, revision_head>
       # revision = Revision.new
       # revision.id = Digest::SHA1.hexdigest revision.to_s
       def add_revision(revision)
@@ -16,7 +16,7 @@ module Kron
         # sync_manifest(manifest)
         @current[1] = revision
         @heads.store(current[0], current[1])
-        @root = revision if @root.nil?
+        branch_hook.add revision
         rev_map.store(revision.id, revision)
       end
 

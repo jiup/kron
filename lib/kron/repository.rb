@@ -155,9 +155,10 @@ module Kron
 
       # load Revisions
       revisions = load_rev # TODO: not implemented
-      if revisions.current[0] == nil
+      if revisions.current[0].nil?
         raise StandardError, "HEAD detached at #{revisions.current[1]}"
       end
+
       Dir.glob(STAGE_DIR + '*/*').each do |file_path|
         dst_path = OBJECTS_DIR + file_path.split('/')[-2..-1].join('/')
         FileUtils.mkdir_p(File.dirname(dst_path))
@@ -202,11 +203,66 @@ module Kron
       remove_stage
     end
 
+    # @param [Object] b_name
+    # def branch(b_name, is_delete = false)
+    #   revisions = load_rev
+    #
+    #   raise StandardError, "branch '#{b_name}' already exist" if revisions.heads[b_name]
+    #
+    #   revisions.current[0] = b_name if revisions.current[0].nil?
+    #   revisions.heads.store(b_name, revisions.current[1])
+    # end
+
+    def add_branch(b_name)
+      revisions = load_rev
+      revisions.current[0] = b_name if revisions.current[0].nil?
+      # revisions.branch_hook
+      if revisions.heads[b_name]
+        raise StandardError, "branch '#{b_name}' already exist"
+      end
+
+      revisions.heads.store(b_name, revisions.current[1])
+    end
+
+    def list_branch()
+      revisions = load_rev
+      revisions.heads.keys
+    end
+
+    # def delete_revision(rev)
+    #   if rev.p_node.branch == rev.branch
+    #     delete_branch(rev.p_node)
+    #   else
+    #     rev_id = rev.id
+    #     File.rm_rf File.join(MANIFEST_DIR, rev_id)
+    #     File.rm_rf File.join(CHANGESET_DIR, rev_id)
+    #     rev.
+    #   end
+    # end
+
+    # def delete_branch(b_name)
+    #   revisions = load_rev
+    #   raise StandardError, "branch '#{b_name}' not found" unless revisions.heads[b_name]
+    #   b_to_delete = revisions.heads[b_name]
+    #
+    #   revisions.heads.delete(b_name)
+    #
+    # end
+
+    def rename_branch(old_name, new_name)
+      revisions = load_rev
+      raise StandardError, "branch '#{b_name}' not found" unless revisions.heads[old_name]
+
+      revisions.heads.store(new_name,revisions.heads[old_name])
+      revisions.heads.delete(old_name)
+    end
+
     def checkout(target, is_branch = false, force = false)
       revisions = load_rev
       index = load_index
+      stage = load_stage
       unless force
-        if File.exist? STAGE_PATH
+        unless stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
           raise StandardError, 'something in stage need to commit'
         end
         tracked = Set.new
@@ -219,12 +275,14 @@ module Kron
       end
       if is_branch
         if revisions.heads.has_key?(target)
+          new_branch = target
           revision_id = revisions.heads[target]
         else
           raise StandardError, "branch '#{target}' not found"
         end
       else
         if revisions.rev_map.has_key?(target)
+          new_branch = nil
           revision_id = target
         else
           raise StandardError, "revision '#{target}' not found"
@@ -240,11 +298,9 @@ module Kron
         FileUtils.cp File.join(OBJECTS_DIR, dir, file_hash), File.join(WORKING_DIR, file_name)
         new_index.put [file_name, paras].flatten
       end
-      revisions.current = [nil, revision_id]
+      revisions.current = [new_branch, revision_id]
       sync_index(new_index)
       sync_rev(revisions)
-
-
     end
 
     def status

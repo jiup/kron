@@ -19,6 +19,7 @@ module Kron
           revisions.heads = Hash.new
           revisions.rev_map = Hash.new
           revisions.current << "master"
+          revisions.branch_hook = Set.new
           revisions
         end
 
