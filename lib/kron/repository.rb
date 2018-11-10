@@ -202,12 +202,13 @@ module Kron
       remove_stage
     end
 
-    def checkout(target, is_branch = false)
+    def checkout(target, is_branch = false, force = false)
       revisions = load_rev
       index = load_index
       if File.exist? STAGE_PATH
         raise StandardError, 'something in stage need to commit'
       end
+
       tracked = Set.new
       index.each_pair {|file_path, _args| tracked << file_path}
       wd = SortedSet.new
@@ -215,6 +216,7 @@ module Kron
       unless (wd - tracked).empty?
         raise StandardError, "untracked files #{(wd - tracked)}"
       end
+
       if is_branch
         if revisions.heads.has_key?(target)
           revision_id = revisions.heads[target]
@@ -241,8 +243,6 @@ module Kron
       revisions.current = [nil, revision_id]
       sync_index(new_index)
       sync_rev(revisions)
-
-
     end
 
     def status
@@ -274,7 +274,7 @@ module Kron
 
       rev = load_rev
       print 'On branch'
-      puts " #{rev.current[0]}".colorize(color: :light_blue)
+      puts " #{rev.current[0]}".colorize(color: :light_cyan)
       if rev.current[1] == rev.heads[rev.current[0]]
         puts 'Your branch is up to date.'
         puts

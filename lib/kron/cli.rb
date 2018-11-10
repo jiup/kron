@@ -167,16 +167,60 @@ module Kron
       end
     end
 
-    desc 'Switch branches or restore working directory files'
+    desc 'List, create, or delete branches'
     arg '<branch_name>'
+    command :branch do |c|
+      c.desc 'list all branches'
+      c.switch %i[l list], negatable: false
+      c.desc 'create a branch'
+      c.flag %i[c create], arg_name: '<branch>'
+      c.desc 'delete a branch'
+      c.flag %i[d delete], arg_name: '<branch>'
+      c.desc 'rename a branch'
+      c.flag %i[r rename], arg_name: '<old_branch> <new_branch>'
+      c.action do |_global_options, options, args|
+        assert_repo_exist
+        if options[:l]
+          help_now!('no arguments required') unless args.empty?
+          p 'list branches'
+        elsif !options[:r].nil?
+          # help_now!('argument <old_branch> <new_branch> required') unless args.length == 2
+          # p 'rename a branch'
+        else
+          if options[:d].nil?
+            if options[:c].nil?
+              help_now!('single argument <branch> required') unless args.length == 1
+              branch_name = args[0]
+            else
+              help_now!('no arguments required') unless args.empty?
+              branch_name = options[:c]
+            end
+            p "create a branch <#{branch_name}>"
+          else
+            help_now!('no arguments required') unless args.empty?
+            p 'delete a branch'
+          end
+        end
+        exit_now! 'Command not implemented'
+      end
+    end
+
+    desc 'Switch branches and restore working directory files'
+    arg '<commit>'
     command [:checkout, :goto] do |c|
       c.desc 'Proceed even if the index or the working directory differs from HEAD'
       c.switch %i[f force], negatable: false
-      c.action do |_global_options, _options, _args|
+      c.desc 'Prepare for working on a specific <branch>'
+      c.flag %i[b branch], arg_name: '<branch>'
+      c.action do |_global_options, options, args|
         assert_repo_exist
-        checkout(_args[0])
-        p "==========="
-        # exit_now! 'Command not implemented'
+        if options[:b].nil?
+          help_now!('single argument <commit> required') if args.length != 1
+          checkout(args[0], false, options[:f])
+        else
+          help_now!('no arguments required') unless args.empty?
+          checkout(options[:b], true, options[:f])
+        end
       end
     end
 
