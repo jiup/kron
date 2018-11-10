@@ -273,8 +273,12 @@ module Kron
       end
 
       rev = load_rev
-      print 'On branch'
-      puts " #{rev.current[0]}".colorize(color: :light_cyan)
+      if rev.current[0].nil?
+        puts "HEAD detached at #{rev.current[1]}".colorize(color: :red)
+      else
+        print 'On branch'
+        puts " #{rev.current[0]}".colorize(color: :light_cyan)
+      end
       if rev.current[1] == rev.heads[rev.current[0]]
         puts 'Your branch is up to date.'
         puts
