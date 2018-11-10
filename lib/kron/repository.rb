@@ -219,13 +219,13 @@ module Kron
         if revisions.heads.has_key?(target)
           revision_id = revisions.heads[target]
         else
-          raise StandardError, "branch #{target} not found"
+          raise StandardError, "branch '#{target}' not found"
         end
       else
         if revisions.rev_map.has_key?(target)
           revision_id = target
         else
-          raise StandardError, "revision #{target} not found"
+          raise StandardError, "revision '#{target}' not found"
         end
       end
       mf = load_manifest(revision_id)
@@ -235,7 +235,7 @@ module Kron
         dir = paras[0][0..1]
         file_hash = paras[0][2..-1]
         FileUtils.mkdir_p File.dirname(file_name)
-        FileUtils.mv File.join(OBJECTS_DIR, dir, file_hash), File.join(WORKING_DIR, file_name)
+        FileUtils.cp File.join(OBJECTS_DIR, dir, file_hash), File.join(WORKING_DIR, file_name)
         new_index.put [file_name, paras].flatten
       end
       revisions.current = [nil, revision_id]
@@ -308,7 +308,7 @@ module Kron
       end
       if nothing_to_commit
         if not_staged
-          puts 'nothing to commit, working tree clean'
+          puts 'nothing to commit, working directory clean'
         else
           puts 'no changes added to commit (use \'kron add\' to stage changes)'
         end
