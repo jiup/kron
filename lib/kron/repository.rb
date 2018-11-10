@@ -52,7 +52,7 @@ module Kron
         file_paths = [file_path]
       end
       file_paths.each do |path|
-        path = Pathname.new(path).realpath.relative_path_from(Pathname.new(WORKING_DIR)).to_s
+        path = Pathname.new(path).realpath.relative_path_from(Pathname.new(WORKING_DIR)).to_s if File.exist?(path)
         unless File.exist? path
           puts "File '#{path}' not found." if verbose
           next
@@ -244,7 +244,8 @@ module Kron
         stage.to_delete.each { |f| puts "        deleted: #{f}".colorize(color: :red) }
         puts
       end
-      unless n_stage_modified.empty? && n_stage_deleted.empty?
+      not_staged = n_stage_modified.empty? && n_stage_deleted.empty?
+      unless not_staged
         puts 'Changes not staged for commit:'
         puts '  (use \'kron add <file>...\' to update what will be committed)'
         puts '  (use \'kron checkout -f\' to discard changes in working directory)'
@@ -260,7 +261,13 @@ module Kron
         untracked.each { |f| puts "        #{f}".colorize(color: :red) }
         puts
       end
-      puts 'no changes added to commit (use \'kron add\' to stage changes)' if nothing_to_commit
+      if nothing_to_commit
+        if not_staged
+          puts 'nothing to commit, working tree clean'
+        else
+          puts 'no changes added to commit (use \'kron add\' to stage changes)'
+        end
+      end
     end
 
     def serve(single_pass = true)
