@@ -202,18 +202,20 @@ module Kron
       remove_stage
     end
 
-    def checkout(target, is_branch = false)
+    def checkout(target, is_branch = false, force = false)
       revisions = load_rev
       index = load_index
-      if File.exist? STAGE_PATH
-        raise StandardError, 'something in stage need to commit'
-      end
-      tracked = Set.new
-      index.each_pair {|file_path, _args| tracked << file_path}
-      wd = SortedSet.new
-      Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
-      unless (wd - tracked).empty?
-        raise StandardError, "untracked files #{(wd - tracked)}"
+      unless force
+        if File.exist? STAGE_PATH
+          raise StandardError, 'something in stage need to commit'
+        end
+        tracked = Set.new
+        index.each_pair {|file_path, _args| tracked << file_path}
+        wd = SortedSet.new
+        Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
+        unless (wd - tracked).empty?
+          raise StandardError, "untracked files #{(wd - tracked)}"
+        end
       end
       if is_branch
         if revisions.heads.has_key?(target)
@@ -260,7 +262,7 @@ module Kron
         end
       end
       wd = SortedSet.new
-      Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
+      Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
       untracked = wd - tracked
 
       # exclude by parsing .kronignore file
@@ -284,9 +286,9 @@ module Kron
         puts 'Changes to be committed:'
         puts '  (use \'kron rm -c stage\' to unstage)'
         puts
-        stage.to_add.each { |f| puts "        new file: #{f}".colorize(color: :green) }
-        stage.to_modify.each { |f| puts "        modified: #{f}".colorize(color: :yellow) }
-        stage.to_delete.each { |f| puts "        deleted: #{f}".colorize(color: :red) }
+        stage.to_add.each {|f| puts "        new file: #{f}".colorize(color: :green)}
+        stage.to_modify.each {|f| puts "        modified: #{f}".colorize(color: :yellow)}
+        stage.to_delete.each {|f| puts "        deleted: #{f}".colorize(color: :red)}
         puts
       end
       not_staged = n_stage_modified.empty? && n_stage_deleted.empty?
@@ -303,7 +305,7 @@ module Kron
         puts 'Untracked files:'
         puts '  (use \'kron add <file>...\' to include in what will be committed)'
         puts
-        untracked.each { |f| puts "        #{f}".colorize(color: :red) }
+        untracked.each {|f| puts "        #{f}".colorize(color: :red)}
         puts
       end
       if nothing_to_commit

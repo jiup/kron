@@ -175,7 +175,6 @@ module Kron
       c.action do |_global_options, _options, _args|
         assert_repo_exist
         checkout(_args[0])
-        p "==========="
         # exit_now! 'Command not implemented'
       end
     end
