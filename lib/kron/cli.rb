@@ -168,41 +168,43 @@ module Kron
     end
 
     desc 'List, create, or delete branches'
-    arg '<branch_name>'
+    arg '<branch>'
     command :branch do |c|
-      c.desc 'list all branches'
-      c.switch %i[l list], negatable: false
-      c.desc 'create a branch'
-      c.flag %i[c create], arg_name: '<branch>'
-      c.desc 'delete a branch'
-      c.flag %i[d delete], arg_name: '<branch>'
-      c.desc 'rename a branch'
-      c.flag %i[r rename], arg_name: '<old_branch> <new_branch>'
-      c.action do |_global_options, options, args|
-        assert_repo_exist
-        if options[:l]
+      c.desc 'List all branches'
+      c.command :list do |cc|
+        cc.action do |_global_options, _options, args|
           help_now!('no arguments required') unless args.empty?
           p 'list branches'
-        elsif !options[:r].nil?
-          # help_now!('argument <old_branch> <new_branch> required') unless args.length == 2
-          # p 'rename a branch'
-        else
-          if options[:d].nil?
-            if options[:c].nil?
-              help_now!('single argument <branch> required') unless args.length == 1
-              branch_name = args[0]
-            else
-              help_now!('no arguments required') unless args.empty?
-              branch_name = options[:c]
-            end
-            p "create a branch <#{branch_name}>"
-          else
-            help_now!('no arguments required') unless args.empty?
-            p 'delete a branch'
-          end
         end
-        exit_now! 'Command not implemented'
       end
+      c.desc 'Create a branch'
+      c.arg '<branch>'
+      c.command :add do |cc|
+        cc.action do |_global_options, _options, args|
+          assert_repo_exist
+          help_now!('branch name required') unless args.length == 1
+          p "add branch #{args[0]}"
+        end
+      end
+      c.desc 'Delete a branch'
+      c.arg '<branch>'
+      c.command [:rm, :delete] do |cc|
+        cc.action do |_global_options, _options, args|
+          assert_repo_exist
+          help_now!('branch name required') unless args.length == 1
+          p "delete branch #{args[0]}"
+        end
+      end
+      c.desc 'Rename a branch'
+      c.arg '<old_branch> <new_branch>'
+      c.command [:mv, :rename] do |cc|
+        cc.action do |_global_options, _options, args|
+          assert_repo_exist
+          help_now!('arguments <old_branch> <new_branch> required') unless args.length == 2
+          p "rename branch #{args[0]} to #{args[1]}"
+        end
+      end
+      c.default_command :add
     end
 
     desc 'Switch branches and restore working directory files'
