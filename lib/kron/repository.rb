@@ -194,7 +194,6 @@ module Kron
       manifest_hash = Digest::SHA1.file(MANIFEST_DIR + 'new_manifest.tmp').hexdigest
       changeset_hash = Digest::SHA1.file(CHANGESET_DIR + 'new_changeset.tmp').hexdigest
       rev_id = (manifest_hash.to_i(16) ^ changeset_hash.to_i(16)).to_s(16)
-      p rev_id
       revision.id = rev_id # TODO: use file digest instead
       revisions.add_revision(revision)
       File.rename(MANIFEST_DIR + 'new_manifest.tmp', MANIFEST_DIR + rev_id)
@@ -253,7 +252,6 @@ module Kron
       index.each_pair {|file_path, _args| tracked << file_path}
       n_stage_modified = []
       n_stage_deleted = []
-
       tracked.each do |p|
         if File.exist? p
           n_stage_modified << p unless index[p][0] == Digest::SHA1.file(p).hexdigest
@@ -286,12 +284,10 @@ module Kron
         puts 'Changes to be committed:'
         puts '  (use \'kron rm -c stage\' to unstage)'
         puts
-
         stage.to_add.each { |f| puts "        new file: #{f}".colorize(color: :green) }
         stage.to_modify.each { |f| puts "        modified: #{f}".colorize(color: :yellow) }
         stage.to_delete.each { |f| puts "        deleted: #{f}".colorize(color: :red) }
         puts
-
       end
       not_staged = n_stage_modified.empty? && n_stage_deleted.empty?
       unless not_staged
@@ -307,7 +303,6 @@ module Kron
         puts 'Untracked files:'
         puts '  (use \'kron add <file>...\' to include in what will be committed)'
         puts
-
         untracked.each { |f| puts "        #{f}".colorize(color: :red) }
         puts
       end

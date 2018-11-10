@@ -68,6 +68,7 @@ module Kron
       c.switch %i[q quiet], negatable: false
       c.action do |_global_options, options, file_paths|
         help_now!('file_name is required') if file_paths.empty?
+        assert_repo_exist
         file_paths.each do |file_path|
           add(file_path, options[:f], options[:r], !options[:q])
         end
@@ -87,6 +88,7 @@ module Kron
       c.switch %i[q quiet], negatable: false
       c.action do |_global_options, options, file_paths|
         help_now!('file_name is required') if file_paths.empty?
+        assert_repo_exist
         file_paths.each do |file_path|
           remove(file_path, !options[:f], options[:r], !options[:c], !options[:q])
         end
@@ -98,7 +100,7 @@ module Kron
     command :status do |c|
       c.action do |_global_options, _options, args|
         help_now!('no arguments required') unless args.empty?
-
+        assert_repo_exist
         status
       end
     end
@@ -115,6 +117,7 @@ module Kron
       c.flag %i[u author], arg_name: '<author>'
       c.action do |global_options, options, args|
         help_now!('no arguments required') unless args.empty?
+        assert_repo_exist
         if options[:m].empty? || options[:m].first.strip.empty?
           exit_now!('please specify commit message')
         end
@@ -170,6 +173,7 @@ module Kron
       c.desc 'Proceed even if the index or the working directory differs from HEAD'
       c.switch %i[f force], negatable: false
       c.action do |_global_options, _options, _args|
+        assert_repo_exist
         checkout(_args[0])
         p "==========="
         # exit_now! 'Command not implemented'
