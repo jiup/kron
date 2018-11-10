@@ -194,7 +194,7 @@ module Kron
       manifest_hash = Digest::SHA1.file(MANIFEST_DIR + 'new_manifest.tmp').hexdigest
       changeset_hash = Digest::SHA1.file(CHANGESET_DIR + 'new_changeset.tmp').hexdigest
       rev_id = (manifest_hash.to_i(16) ^ changeset_hash.to_i(16)).to_s(16)
-
+      p rev_id
       revision.id = rev_id # TODO: use file digest instead
       revisions.add_revision(revision)
       File.rename(MANIFEST_DIR + 'new_manifest.tmp', MANIFEST_DIR + rev_id)
@@ -205,6 +205,7 @@ module Kron
 
     def checkout(target, is_branch = false)
       revisions = load_rev
+      index = load_index
       if File.exist? STAGE_PATH
         raise StandardError, 'something in stage need to commit'
       end
@@ -216,27 +217,31 @@ module Kron
         raise StandardError, "untracked files #{(wd - tracked)}"
       end
       if is_branch
-        if revisions.heads.has_key(target)
+        if revisions.heads.has_key?(target)
           revision_id = revisions.heads[target]
         else
           raise StandardError, "branch #{target} not found"
         end
       else
-        if revisions.rev_map.has_key(target)
-          revision_id = revisions.rev_map[target]
+        if revisions.rev_map.has_key?(target)
+          revision_id = target
         else
           raise StandardError, "revision #{target} not found"
         end
       end
       mf = load_manifest(revision_id)
       new_index = Kron::Domain::Index.new
+      # based on mf recover working directory and index.
       mf.each_pair do |file_name, paras|
-        dir = paras[0..1]
-        file_hash = paras[2..-1]
-        File.move File.join(OBJECTS_DIR, dir, file_hash), File.join(WORKING_DIR, file_name)
+        dir = paras[0][0..1]
+        file_hash = paras[0][2..-1]
+        FileUtils.mkdir_p File.dirname(file_name)
+        FileUtils.mv File.join(OBJECTS_DIR, dir, file_hash), File.join(WORKING_DIR, file_name)
         new_index.put [file_name, paras].flatten
       end
       revisions.current = [nil, revision_id]
+      sync_index(new_index)
+      sync_rev(revisions)
 
 
     end
