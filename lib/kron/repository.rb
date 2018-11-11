@@ -1,3 +1,4 @@
+require 'set'
 require 'digest'
 require 'pathname'
 require 'colorize'
@@ -74,7 +75,8 @@ module Kron
             # multi-declared modification, delete previous stage first
             FileUtils.rm_f(File.join(STAGE_DIR, old_hash[0..1], old_hash[2..-1]))
           else
-            stage.to_modify << path
+            # stage.remove_all path
+            stage.to_modify << path # add -> modify file -> add ->  commit
           end
         else
           if stage.to_delete? path
@@ -156,10 +158,15 @@ module Kron
         raise StandardError, "HEAD detached at #{revisions.current[1]}"
       end
 
-      Dir.glob(STAGE_DIR + '*/*').each do |file_path|
-        dst_path = OBJECTS_DIR + file_path.split('/')[-2..-1].join('/')
+      hashes = Set.new index.each_pair.collect { |kv| kv[1][0] }
+      Dir.glob(STAGE_DIR + '*/*').each do |file_hash|
+        file_hash_ab = file_hash.split('/')[-2..-1].join('/')
+
+        next unless hashes.include? file_hash_ab.split('/').join('')
+
+        dst_path = OBJECTS_DIR + file_hash_ab
         FileUtils.mkdir_p(File.dirname(dst_path))
-        FileUtils.mv file_path, dst_path, force: true
+        FileUtils.mv file_hash, dst_path, force: true
       end
       # add Manifest TODO: why didn't directly copy it in disk?
       mf = Kron::Domain::Manifest.new
