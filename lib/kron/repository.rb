@@ -384,16 +384,20 @@ module Kron
     end
 
     def list_index
-      puts 'Tracked files:'
       index = load_index
-      size_limit = index.each_pair.map { |e| e[1][1].to_s.length }.max
-      path_limit = index.each_pair.map { |e| e[0].to_s.length }.max
-      index.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
-        print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
-        print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
-        print "  #{attrs[1].ljust(size_limit)}".colorize(color: :blue)
-        print "  #{file_path.ljust(path_limit)}"
-        puts attrs[0] == Digest::SHA1.file(file_path).hexdigest ? '' : ' (modified)'.to_s.colorize(color: :red)
+      if index.each_pair.size > 0
+        puts 'Tracked files:'
+        size_limit = index.each_pair.map { |e| e[1][1].to_s.length }.max
+        path_limit = index.each_pair.map { |e| e[0].to_s.length }.max
+        index.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
+          print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
+          print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
+          print "  #{attrs[1].ljust(size_limit)}".colorize(color: :blue)
+          print "  #{file_path.ljust(path_limit)}"
+          puts attrs[0] == Digest::SHA1.file(file_path).hexdigest ? '' : ' (modified)'.to_s.colorize(color: :red)
+        end
+      else
+        puts 'No tracked files.'
       end
     end
 
