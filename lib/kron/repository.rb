@@ -277,13 +277,13 @@ module Kron
           raise StandardError, 'something in stage need to commit'
         end
 
-        tracked = Set.new
-        index.each_pair {|file_path, _args| tracked << file_path}
-        wd = SortedSet.new
-        Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
-        unless (wd - tracked).empty?
-          raise StandardError, "untracked files #{(wd - tracked)}"
-        end
+        # tracked = Set.new
+        # index.each_pair {|file_path, _args| tracked << file_path}
+        # wd = SortedSet.new
+        # Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
+        # unless (wd - tracked).empty?
+        #   raise StandardError, "untracked files #{(wd - tracked)}"
+        # end
       end
 
       if is_branch
@@ -310,7 +310,14 @@ module Kron
       end
       mf = load_manifest(revision_id)
       new_index = Kron::Domain::Index.new
+      now_files = Set.new index.each_pair.collect { |kv| kv[0] }
 
+      target_files = Set.new mf.each_pair.collect { |kv| kv[0] }
+
+      to_rm_files = now_files - target_files
+      to_rm_files.each do |file|
+        FileUtils.rm_f File.join(WORKING_DIR,file)
+      end
       # based on mf recover working directory and index.
       mf.each_pair do |file_name, paras|
         dir = paras[0][0..1]
