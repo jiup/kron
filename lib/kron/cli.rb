@@ -174,7 +174,7 @@ module Kron
       c.command :list do |cc|
         cc.action do |_global_options, _options, args|
           help_now!('no arguments required') unless args.empty?
-          p list_branch()
+          p list_branch
           p 'list branches'
         end
       end
@@ -184,6 +184,7 @@ module Kron
         cc.action do |_global_options, _options, args|
           assert_repo_exist
           help_now!('branch name required') unless args.length == 1
+          add_branch args[0]
           p "add branch #{args[0]}"
         end
       end

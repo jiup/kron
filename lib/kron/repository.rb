@@ -42,7 +42,7 @@ module Kron
       file_paths = []
       if File.directory? file_path
         if recursive
-          file_paths = Dir[File.join(file_path, '**', '*')].reject { |fn| File.directory?(fn) }
+          file_paths = Dir[File.join(file_path, '**', '*')].reject {|fn| File.directory?(fn)}
         else
           Dir.foreach(file_path) do |path|
             file_paths << path if File.file? path
@@ -97,7 +97,7 @@ module Kron
       file_paths = []
       if File.directory? file_path
         if recursive
-          file_paths = Dir[File.join(file_path, '**', '*')].reject { |fn| File.directory?(fn) }
+          file_paths = Dir[File.join(file_path, '**', '*')].reject {|fn| File.directory?(fn)}
         else
           raise StandardError, "Not removing '#{file_path}', recursively without -r"
         end
@@ -170,9 +170,9 @@ module Kron
       # add Changeset
       cs = Kron::Domain::Changeset.new
       cs.rev_id = 'new_changeset.tmp'
-      stage.to_add.each { |f| cs.put('@added_files', f) }
-      stage.to_modify.each { |f| cs.put('@modified_files', f) }
-      stage.to_delete.each { |f| cs.put('@deleted_files', f) }
+      stage.to_add.each {|f| cs.put('@added_files', f)}
+      stage.to_modify.each {|f| cs.put('@modified_files', f)}
+      stage.to_delete.each {|f| cs.put('@deleted_files', f)}
       cs.commit_message = message
       cs.author = author
       cs.timestamp = Time.now.to_i
@@ -192,7 +192,6 @@ module Kron
       remove_stage
     end
 
-
     # @param [Object] b_name
     # def branch(b_name, is_delete = false)
     #   revisions = load_rev
@@ -204,6 +203,10 @@ module Kron
     # end
 
     def add_branch(b_name)
+      if (b_name =~ /^[a-zA-Z0-9]{1,32}$/).nil?
+        raise StandardError, "branch name  '#{b_name}' is invalid"
+      end
+
       revisions = load_rev
       revisions.current[0] = b_name if revisions.current[0].nil?
       # revisions.branch_hook
@@ -212,6 +215,7 @@ module Kron
       end
 
       revisions.heads.store(b_name, revisions.current[1])
+      # p revisions.heads
       sync_rev revisions
     end
 
@@ -244,7 +248,7 @@ module Kron
       revisions = load_rev
       raise StandardError, "branch '#{b_name}' not found" unless revisions.heads[old_name]
 
-      revisions.heads.store(new_name,revisions.heads[old_name])
+      revisions.heads.store(new_name, revisions.heads[old_name])
       revisions.heads.delete(old_name)
       sync_rev revisions
     end
@@ -257,11 +261,11 @@ module Kron
         unless stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
           raise StandardError, 'something in stage need to commit'
         end
-        
+
         tracked = Set.new
-        index.each_pair { |file_path, _args| tracked << file_path }
+        index.each_pair {|file_path, _args| tracked << file_path}
         wd = SortedSet.new
-        Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
+        Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
         unless (wd - tracked).empty?
           raise StandardError, "untracked files #{(wd - tracked)}"
         end
@@ -276,11 +280,17 @@ module Kron
           raise StandardError, "branch '#{target}' not found"
         end
       else
-        if revisions.rev_map.key?(target)
+        matched = []
+        revisions.rev_map.each_key do |id|
+          matched << id unless (id =~ /#{target}/).nil?
+        end
+        if matched.size == 1
           new_branch = nil
-          revision_id = target
-        else
+          revision_id = matched[0]
+        elsif matched.empty?
           raise StandardError, "revision '#{target}' not found"
+        else
+          raise StandardError, "revision '#{target}' is not only one"
         end
       end
       mf = load_manifest(revision_id)
@@ -305,7 +315,7 @@ module Kron
       index = load_index
       stage = load_stage
       tracked = Set.new
-      index.each_pair { |file_path, _args| tracked << file_path }
+      index.each_pair {|file_path, _args| tracked << file_path}
       n_stage_modified = []
       n_stage_deleted = []
       tracked.each do |p|
@@ -316,7 +326,7 @@ module Kron
         end
       end
       wd = SortedSet.new
-      Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
+      Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
       untracked = wd - tracked
 
       # exclude by parsing .kronignore file
@@ -344,9 +354,9 @@ module Kron
         puts 'Changes to be committed:'
         puts '  (use \'kron rm -c stage\' to unstage)'
         puts
-        stage.to_add.each { |f| puts "        new file: #{f}".colorize(color: :green) }
-        stage.to_modify.each { |f| puts "        modified: #{f}".colorize(color: :yellow) }
-        stage.to_delete.each { |f| puts "        deleted: #{f}".colorize(color: :red) }
+        stage.to_add.each {|f| puts "        new file: #{f}".colorize(color: :green)}
+        stage.to_modify.each {|f| puts "        modified: #{f}".colorize(color: :yellow)}
+        stage.to_delete.each {|f| puts "        deleted: #{f}".colorize(color: :red)}
         puts
       end
       not_staged = n_stage_modified.empty? && n_stage_deleted.empty?
@@ -355,15 +365,15 @@ module Kron
         puts '  (use \'kron add <file>...\' to update what will be committed)'
         puts '  (use \'kron checkout -f\' to discard changes in working directory)'
         puts
-        n_stage_modified.each { |f| puts "        modified: #{f}".colorize(color: :red) }
-        n_stage_deleted.each { |f| puts "        deleted: #{f}".colorize(color: :red) }
+        n_stage_modified.each {|f| puts "        modified: #{f}".colorize(color: :red)}
+        n_stage_deleted.each {|f| puts "        deleted: #{f}".colorize(color: :red)}
         puts
       end
       unless untracked.empty?
         puts 'Untracked files:'
         puts '  (use \'kron add <file>...\' to include in what will be committed)'
         puts
-        untracked.each { |f| puts "        #{f}".colorize(color: :red) }
+        untracked.each {|f| puts "        #{f}".colorize(color: :red)}
         puts
       end
       if nothing_to_commit
