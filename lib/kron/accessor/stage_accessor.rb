@@ -17,9 +17,10 @@ module Kron
       end
 
       def load_stage
-        File.new(STAGE_PATH, 'w') unless File.exist? STAGE_PATH
-        FileUtils.mkdir_p STAGE_DIR unless Dir.exist? STAGE_DIR
         stage = Kron::Domain::Stage.new
+        return stage unless File.exist? STAGE_PATH
+
+        FileUtils.mkdir_p STAGE_DIR unless Dir.exist? STAGE_DIR
         return stage unless File.size(STAGE_PATH) > 0
 
         Zlib::Inflate.inflate(File.read(STAGE_PATH)).each_line do |line|

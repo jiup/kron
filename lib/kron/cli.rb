@@ -167,6 +167,13 @@ module Kron
       end
     end
 
+    desc 'Show tracking list for current revision'
+    command [:ls, :list] do |c|
+      c.action do |_global_options, _options, _args|
+        list_index
+      end
+    end
+
     desc 'List, create, or delete branches'
     arg '<branch>'
     command :branch do |c|
@@ -174,8 +181,7 @@ module Kron
       c.command :list do |cc|
         cc.action do |_global_options, _options, args|
           help_now!('no arguments required') unless args.empty?
-          p list_branch
-          p 'list branches'
+          list_branch
         end
       end
       c.desc 'Create a branch'
@@ -185,7 +191,6 @@ module Kron
           assert_repo_exist
           help_now!('branch name required') unless args.length == 1
           add_branch args[0]
-          p "add branch #{args[0]}"
         end
       end
       c.desc 'Delete a branch'
@@ -208,7 +213,7 @@ module Kron
           exit_now! 'Command not implemented'
         end
       end
-      c.default_command :add
+      c.default_command :list
     end
 
     desc 'Switch branches and restore working directory files'

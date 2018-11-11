@@ -221,7 +221,15 @@ module Kron
 
     def list_branch
       revisions = load_rev
-      revisions.heads.keys
+      limit = revisions.heads.keys.map(&:length).max
+      revisions.heads.keys.each do |branch_name|
+        if revisions.current[0] == branch_name
+          print "    #{branch_name.ljust(limit)}".colorize(color: :light_cyan)
+          puts ' <- HEAD'.colorize(color: :yellow)
+        else
+          puts "    #{branch_name.ljust(limit)}"
+        end
+      end
     end
 
     # def delete_revision(rev)
@@ -382,6 +390,20 @@ module Kron
         else
           puts 'no changes added to commit (use \'kron add\' to stage changes)'
         end
+      end
+    end
+
+    def list_index
+      puts 'Tracked files:'
+      index = load_index
+      size_limit = index.each_pair.map { |e| e[1][1].to_s.length }.max
+      path_limit = index.each_pair.map { |e| e[0].to_s.length }.max
+      index.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
+        print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
+        print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
+        print "  #{attrs[1].ljust(size_limit)}".colorize(color: :blue)
+        print "  #{file_path.ljust(path_limit)}"
+        puts attrs[0] == Digest::SHA1.file(file_path).hexdigest ? '' : ' (modified)'.to_s.colorize(color: :red)
       end
     end
 
