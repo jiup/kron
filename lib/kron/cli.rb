@@ -270,14 +270,16 @@ module Kron
     command [:serve] do |c|
       c.desc 'Suppress the output'
       c.switch %i[q quiet], negatable: false
-      c.desc 'Close server after a single serve'
-      c.switch %i[s single-serve], negatable: false
+      c.desc 'Keep online for multiple serve'
+      c.switch %i[m multiple], negatable: false
+      c.desc 'Specify port for server'
+      c.flag %i[p port], arg_name: '<port>'
       c.desc 'Specific token for remote service, if this field not given, an random token will be used'
       c.flag %i[t token], mask: true, arg_name: '<token>', default_value: SecureRandom.alphanumeric(DEFAULT_TOKEN)
       c.action do |_global_options, options, args|
+        assert_repo_exist
         help_now!('no arguments required') unless args.empty?
-        puts "service_token: #{options[:token]}"
-        exit_now! 'Command not implemented'
+        serve(options[:port], options[:token], options[:m], options[:q])
       end
     end
 

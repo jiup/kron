@@ -3,6 +3,7 @@ require 'digest'
 require 'pathname'
 require 'colorize'
 require 'kron/helper/repo_fetcher'
+require 'kron/helper/repo_server'
 require 'kron/accessor/index_accessor'
 require 'kron/accessor/stage_accessor'
 require 'kron/accessor/revisions_accessor'
@@ -425,8 +426,8 @@ module Kron
       end
     end
 
-    def serve(single_pass = true)
-      # TODO: serve a packed repository for remote access
+    def serve(port, token, multiple_serve = false, quiet = false)
+      Kron::Helper::RepoServer.new(port, token, multiple_serve, quiet).serve
     end
 
     def assert_repo_exist
