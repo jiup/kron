@@ -37,4 +37,5 @@ Gem::Specification.new do |spec|
   spec.add_development_dependency 'minitest', '~> 5.0'
   spec.add_development_dependency 'gli', '~> 2.18.0'
   spec.add_development_dependency 'colorize', '~> 0.8.1'
+  spec.add_development_dependency 'rubyzip', '~> 1.2.2'
 end
