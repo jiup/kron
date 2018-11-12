@@ -232,8 +232,8 @@ module Kron
       limit = revisions.heads.keys.map(&:length).max
       revisions.heads.keys.each do |branch_name|
         if revisions.current[0] == branch_name
-          print "    #{branch_name.ljust(limit)}".colorize(color: :light_cyan)
-          puts ' <- HEAD'.colorize(color: :yellow)
+          print "    #{branch_name.ljust(limit)}".colorize(color: :light_cyan, mode: :bold)
+          puts ' <- HEAD'.colorize(color: :yellow, mode: :bold)
         else
           puts "    #{branch_name.ljust(limit)}"
         end
@@ -366,7 +366,7 @@ module Kron
         puts "HEAD detached at #{rev.current[1]}".colorize(color: :red)
       else
         print 'On branch'
-        puts " #{rev.current[0]}".colorize(color: :light_cyan)
+        puts " #{rev.current[0]}".colorize(color: :light_cyan, mode: :bold)
       end
       if rev.current[1] == rev.heads[rev.current[0]]
         puts 'Your branch is up to date.'
