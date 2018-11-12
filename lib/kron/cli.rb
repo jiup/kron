@@ -68,6 +68,7 @@ module Kron
       c.switch %i[q quiet], negatable: false
       c.action do |_global_options, options, file_paths|
         help_now!('file_name is required') if file_paths.empty?
+        assert_repo_exist
         file_paths.each do |file_path|
           add(file_path, options[:f], options[:r], !options[:q])
         end
@@ -87,6 +88,7 @@ module Kron
       c.switch %i[q quiet], negatable: false
       c.action do |_global_options, options, file_paths|
         help_now!('file_name is required') if file_paths.empty?
+        assert_repo_exist
         file_paths.each do |file_path|
           remove(file_path, !options[:f], options[:r], !options[:c], !options[:q])
         end
@@ -98,9 +100,8 @@ module Kron
     command :status do |c|
       c.action do |_global_options, _options, args|
         help_now!('no arguments required') unless args.empty?
-
+        assert_repo_exist
         status
-        exit_now! 'Command not fully implemented'
       end
     end
 
@@ -116,6 +117,7 @@ module Kron
       c.flag %i[u author], arg_name: '<author>'
       c.action do |global_options, options, args|
         help_now!('no arguments required') unless args.empty?
+        assert_repo_exist
         if options[:m].empty? || options[:m].first.strip.empty?
           exit_now!('please specify commit message')
         end
@@ -164,13 +166,71 @@ module Kron
       end
     end
 
-    desc 'Switch branches or restore working directory files'
-    arg '<branch_name>'
+    desc 'Show tracking list for current revision'
+    command [:ls, :list] do |c|
+      c.action do |_global_options, _options, _args|
+        list_index
+      end
+    end
+
+    desc 'List, create, or delete branches'
+    arg '<branch>'
+    command :branch do |c|
+      c.desc 'List all branches'
+      c.command :list do |cc|
+        cc.action do |_global_options, _options, args|
+          help_now!('no arguments required') unless args.empty?
+          list_branch
+        end
+      end
+      c.desc 'Create a branch'
+      c.arg '<branch>'
+      c.command :add do |cc|
+        cc.action do |_global_options, _options, args|
+          assert_repo_exist
+          help_now!('branch name required') unless args.length == 1
+          add_branch args[0]
+        end
+      end
+      c.desc 'Delete a branch'
+      c.arg '<branch>'
+      c.command [:rm, :delete] do |cc|
+        cc.action do |_global_options, _options, args|
+          assert_repo_exist
+          help_now!('branch name required') unless args.length == 1
+          p "delete branch #{args[0]}"
+          exit_now! 'Command not implemented'
+        end
+      end
+      c.desc 'Rename a branch'
+      c.arg '<old_branch> <new_branch>'
+      c.command [:mv, :rename] do |cc|
+        cc.action do |_global_options, _options, args|
+          assert_repo_exist
+          help_now!('arguments <old_branch> <new_branch> required') unless args.length == 2
+          p "rename branch #{args[0]} to #{args[1]}"
+          exit_now! 'Command not implemented'
+        end
+      end
+      c.default_command :list
+    end
+
+    desc 'Switch branches and restore working directory files'
+    arg '<commit>'
     command [:checkout, :goto] do |c|
       c.desc 'Proceed even if the index or the working directory differs from HEAD'
       c.switch %i[f force], negatable: false
-      c.action do |_global_options, _options, _args|
-        exit_now! 'Command not implemented'
+      c.desc 'Prepare for working on a specific <branch>'
+      c.flag %i[b branch], arg_name: '<branch>'
+      c.action do |_global_options, options, args|
+        assert_repo_exist
+        if options[:b].nil?
+          help_now!('single argument <commit> required') if args.length != 1
+          checkout(args[0], false, options[:f])
+        else
+          help_now!('no arguments required') unless args.empty?
+          checkout(options[:b], true, options[:f])
+        end
       end
     end
 
@@ -209,14 +269,16 @@ module Kron
     command [:serve] do |c|
       c.desc 'Suppress the output'
       c.switch %i[q quiet], negatable: false
-      c.desc 'Close server after a single serve'
-      c.switch %i[s single-serve], negatable: false
+      c.desc 'Keep online for multiple serve'
+      c.switch %i[m multiple], negatable: false
+      c.desc 'Specify port for server'
+      c.flag %i[p port], arg_name: '<port>'
       c.desc 'Specific token for remote service, if this field not given, an random token will be used'
       c.flag %i[t token], mask: true, arg_name: '<token>', default_value: SecureRandom.alphanumeric(DEFAULT_TOKEN)
       c.action do |_global_options, options, args|
+        assert_repo_exist
         help_now!('no arguments required') unless args.empty?
-        puts "service_token: #{options[:token]}"
-        exit_now! 'Command not implemented'
+        serve(options[:port], options[:token], options[:m], options[:q])
       end
     end
 
