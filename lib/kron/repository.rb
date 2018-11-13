@@ -368,7 +368,7 @@ module Kron
         print 'On branch'
         puts " #{rev.current[0]}".colorize(color: :light_cyan, mode: :bold)
       end
-      if rev.current[1] == rev.heads[rev.current[0]]
+      if rev.current[1] == rev.heads[rev.current[0]].id
         puts 'Your branch is up to date.'
         puts
       end
