@@ -447,7 +447,7 @@ module Kron
 
     def list_index
       index = load_index
-      if !index.each_pair.empty?
+      if index.each_pair.size > 0
         puts 'Tracked files:'
         size_limit = index.each_pair.map {|e| e[1][1].to_s.length}.max
         path_limit = index.each_pair.map {|e| e[0].to_s.length}.max

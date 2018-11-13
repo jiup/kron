@@ -197,6 +197,7 @@ module Kron
       c.desc 'List all branches'
       c.command :list do |cc|
         cc.action do |_global_options, _options, args|
+          assert_repo_exist
           help_now!('no arguments required') unless args.empty?
           list_branch
         end
