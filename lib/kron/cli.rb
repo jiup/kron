@@ -59,7 +59,7 @@ module Kron
 
     desc 'Add file contents to the index'
     arg '<file_name>', :required
-    command :add do |c|
+    command [:add, :stage] do |c|
       c.desc 'Overwrite if file(s) already added to stage'
       c.switch %i[f force], negatable: false
       c.desc 'Allow recursive add when a leading directory name is given'
@@ -92,7 +92,24 @@ module Kron
         file_paths.each do |file_path|
           remove(file_path, !options[:f], options[:r], !options[:c], !options[:q])
         end
+      end
+    end
 
+    desc 'Unstage files from the repository index'
+    arg '<file_name>', :required
+    command :unstage do |c|
+      c.desc 'Override the up-to-date check'
+      c.switch %i[f force], negatable: false
+      c.desc 'Allow recursive removal when a leading directory name is given'
+      c.switch %i[r], negatable: false
+      c.desc 'Suppress the output'
+      c.switch %i[q quiet], negatable: false
+      c.action do |_global_options, options, file_paths|
+        help_now!('file_name is required') if file_paths.empty?
+        assert_repo_exist
+        file_paths.each do |file_path|
+          remove(file_path, !options[:f], options[:r], false, !options[:q])
+        end
       end
     end
 
