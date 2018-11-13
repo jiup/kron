@@ -2,6 +2,7 @@ require 'set'
 require 'digest'
 require 'pathname'
 require 'colorize'
+require 'kron/constant'
 require 'kron/helper/repo_fetcher'
 require 'kron/helper/repo_server'
 require 'kron/accessor/index_accessor'
@@ -34,7 +35,7 @@ module Kron
     end
 
     def clone(repo_uri, force = false, verbose = false)
-      if Kron::Helper::RepoFetcher.from(repo_uri, force, verbose)
+      if Kron::Helper::RepoFetcher.from(repo_uri, BASE_DIR, force, verbose)
         # TODO: recovery the working directory from HEAD revision
       end
     end
@@ -45,7 +46,7 @@ module Kron
       file_paths = []
       if File.directory? file_path
         if recursive
-          file_paths = Dir[File.join(file_path, '**', '*')].reject {|fn| File.directory?(fn)}
+          file_paths = Dir[File.join(file_path, '**', '*')].reject { |fn| File.directory?(fn) }
         else
           Dir.foreach(file_path) do |path|
             file_paths << path if File.file? path
@@ -101,7 +102,7 @@ module Kron
       file_paths = []
       if File.directory? file_path
         if recursive
-          file_paths = Dir[File.join(file_path, '**', '*')].reject {|fn| File.directory?(fn)}
+          file_paths = Dir[File.join(file_path, '**', '*')].reject { |fn| File.directory?(fn) }
         else
           raise StandardError, "Not removing '#{file_path}', recursively without -r"
         end
@@ -157,10 +158,10 @@ module Kron
       # load Revisions
       revisions = load_rev
       if revisions.current[0].nil?
-        raise StandardError, "HEAD detached at #{revisions.current[1]}"
+        raise StandardError, "HEAD detached at #{revisions.current[1].id}"
       end
 
-      hashes = Set.new index.each_pair.collect {|kv| kv[1][0]}
+      hashes = Set.new index.each_pair.collect { |kv| kv[1][0] }
       Dir.glob(STAGE_DIR + '*/*').each do |file_hash|
         file_hash_ab = file_hash.split('/')[-2..-1].join('/')
 
@@ -179,9 +180,9 @@ module Kron
       # add Changeset
       cs = Kron::Domain::Changeset.new
       cs.rev_id = 'new_changeset.tmp'
-      stage.to_add.each {|f| cs.put('@added_files', f)}
-      stage.to_modify.each {|f| cs.put('@modified_files', f)}
-      stage.to_delete.each {|f| cs.put('@deleted_files', f)}
+      stage.to_add.each { |f| cs.put('@added_files', f) }
+      stage.to_modify.each { |f| cs.put('@modified_files', f) }
+      stage.to_delete.each { |f| cs.put('@deleted_files', f) }
       cs.commit_message = message
       cs.author = author
       cs.timestamp = Time.now.to_i
@@ -279,13 +280,13 @@ module Kron
           raise StandardError, 'something in stage need to commit'
         end
         wd = SortedSet.new
-        Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
+        Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
         tracked = Set.new
-        index.each_pair do |file_path, _args|
+        index.each_pair do |file_path, args|
           tracked << file_path
           next unless wd.include? file_path
-          if Digest::SHA1.file(file_path).hexdigest != _args[0]
-            raise StandardError, "#{file_path} modify but not add to stage"
+          if Digest::SHA1.file(file_path).hexdigest != args[0]
+            raise StandardError, "modified files unstaged, use 'kron status' to check, '-f' to overwrite"
           end
         end
 
@@ -331,7 +332,7 @@ module Kron
         unless overwritten.empty?
           puts 'The following untracked working directory files would be overwritten by checkout:'
           puts
-          overwritten.each {|path| puts "        #{path}".colorize(color: :red)}
+          overwritten.each { |path| puts "        #{path}".colorize(color: :red) }
           puts
           puts 'Please move or remove them before you switch branches.'
           return
@@ -339,8 +340,8 @@ module Kron
       end
 
       new_index = Kron::Domain::Index.new
-      now_files = Set.new index.each_pair.collect {|kv| kv[0]}
-      target_files = Set.new mf.each_pair.collect {|kv| kv[0]}
+      now_files = Set.new index.each_pair.collect { |kv| kv[0] }
+      target_files = Set.new mf.each_pair.collect { |kv| kv[0] }
       to_rm_files = now_files - target_files
       to_rm_files.each do |file|
         FileUtils.rm_f File.join(WORKING_DIR, file)
@@ -375,7 +376,7 @@ module Kron
       index = load_index
       stage = load_stage
       tracked = Set.new
-      index.each_pair {|file_path, _args| tracked << file_path}
+      index.each_pair { |file_path, _args| tracked << file_path }
       n_stage_modified = []
       n_stage_deleted = []
       tracked.each do |p|
@@ -386,7 +387,7 @@ module Kron
         end
       end
       wd = SortedSet.new
-      Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
+      Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
       untracked = wd - tracked
 
       # exclude by parsing .kronignore file
@@ -414,9 +415,9 @@ module Kron
         puts 'Changes to be committed:'
         puts '  (use \'kron rm -c stage\' to unstage)'
         puts
-        stage.to_add.each {|f| puts "        new file:   #{f}".colorize(color: :green)}
-        stage.to_modify.each {|f| puts "        modified:   #{f}".colorize(color: :yellow)}
-        stage.to_delete.each {|f| puts "        deleted:   #{f}".colorize(color: :red)}
+        stage.to_add.each { |f| puts "        new file:   #{f}".colorize(color: :green) }
+        stage.to_modify.each { |f| puts "        modified:   #{f}".colorize(color: :yellow) }
+        stage.to_delete.each { |f| puts "        deleted:   #{f}".colorize(color: :red) }
         puts
       end
       not_staged = n_stage_modified.empty? && n_stage_deleted.empty?
@@ -425,15 +426,15 @@ module Kron
         puts '  (use \'kron add <file>...\' to update what will be committed)'
         puts '  (use \'kron checkout -f\' to discard changes in working directory)'
         puts
-        n_stage_modified.each {|f| puts "        modified:   #{f}".colorize(color: :red)}
-        n_stage_deleted.each {|f| puts "        deleted:   #{f}".colorize(color: :red)}
+        n_stage_modified.each { |f| puts "        modified:   #{f}".colorize(color: :red) }
+        n_stage_deleted.each { |f| puts "        deleted:   #{f}".colorize(color: :red) }
         puts
       end
       unless untracked.empty?
         puts 'Untracked files:'
         puts '  (use \'kron add <file>...\' to include in what will be committed)'
         puts
-        untracked.each {|f| puts "        #{f}".colorize(color: :red)}
+        untracked.each { |f| puts "        #{f}".colorize(color: :red) }
         puts
       end
       if nothing_to_commit
@@ -453,9 +454,9 @@ module Kron
       index = load_index
       if index.each_pair.size > 0
         puts 'Tracked files:'
-        size_limit = index.each_pair.map {|e| e[1][1].to_s.length}.max
-        path_limit = index.each_pair.map {|e| e[0].to_s.length}.max
-        index.each_pair.sort_by {|e| e[0]}.each do |file_path, attrs|
+        size_limit = index.each_pair.map { |e| e[1][1].to_s.length }.max
+        path_limit = index.each_pair.map { |e| e[0].to_s.length }.max
+        index.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
           print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
           print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
           print "  #{attrs[1].ljust(size_limit)}".colorize(color: :blue)
@@ -485,19 +486,22 @@ module Kron
       end
     end
 
-    def pull(repo_uri, tar_branch = 'master',force = false, verbose = false)
+    def pull(repo_uri, tar_branch = 'jiup', force = false, verbose = false)
       # FileUtils.rm_rf File.join(WORKING_DIR, 'tmp') if File.exist? File.join(WORKING_DIR, 'tmp')
+      Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
 
-      Kron::Helper::RepoFetcher.from(repo_uri, force, verbose)
-      return
-      FileUtils.mkdir File.join(WORKING_DIR, '.tmp')
-      Zip::File.open(repo_name, Zip::File::CREATE) {|zipfile|
-        zipfile.each do |file|
-          fpath = File.join(WORKING_DIR, '.tmp', file.name)
-          zipfile.extract(file, fpath) unless File.exist?(fpath)
-        end
-      }
-      tar_revisions = load_rev(File.join(BASE_DIR, 'tmp', 'rev'))
+      if File.file? File.join(KRON_DIR, '.kron')
+        FileUtils.mkdir File.join(KRON_DIR, 'tmp')
+        Zip::File.open(File.join(KRON_DIR, File.basename(repo_uri)), Zip::File::CREATE) {|zipfile|
+          zipfile.each do |file|
+            fpath = File.join(KRON_DIR, 'tmp', file.name)
+            zipfile.extract(file, fpath) unless File.exist?(fpath)
+          end
+        }
+      else
+        FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR,'tmp')
+      end
+      tar_revisions = load_rev(File.join(KRON_DIR, 'tmp', 'rev'))
       revisions = load_rev
       cur_revision = revisions.heads[revisions.current[0]]
       tar_cur_revision = tar_revisions.heads[tar_branch]
@@ -518,38 +522,35 @@ module Kron
       # update revisions.heads {tar_branch:tar_cur_revision}
       revisions.heads.store(tar_branch, tar_cur_revision)
       tmp_now_revision.p_node = revisions.rev_map[ancestor_id]
-      # sync_rev revisions
-
-
+      sync_rev revisions
       # combine manifest
-      Dir.foreach(File.join(WORKING_DIR, 'tmp', 'manifest')) do |file|
+      Dir.foreach(File.join(KRON_DIR, 'tmp', 'manifest')) do |file|
         unless File.exist?(File.join(MANIFEST_DIR, file))
-          FileUtils.cp File.join(WORKING_DIR, 'tmp', 'manifest', file), File.join(MANIFEST_DIR, file)
+          FileUtils.cp File.join(KRON_DIR, 'tmp', 'manifest', file), File.join(MANIFEST_DIR, file)
         end
       end
       # combine changeset
-      Dir.foreach(File.join(WORKING_DIR, 'tmp', 'changeset')) do |file|
+      Dir.foreach(File.join(KRON_DIR, 'tmp', 'changeset')) do |file|
         unless File.exist?(File.join(CHANGESET_DIR, file))
-          FileUtils.cp File.join(WORKING_DIR, 'tmp', 'changeset', file), File.join(CHANGESET_DIR, file)
+          FileUtils.cp File.join(KRON_DIR, 'tmp', 'changeset', file), File.join(CHANGESET_DIR, file)
         end
       end
       #combine objects
-      Dir.foreach(File.join(WORKING_DIR, 'tmp', 'objects')) do |subdir|
+      Dir.foreach(File.join(KRON_DIR, 'tmp', 'objects')) do |subdir|
         if File.exist?(File.join(OBJECTS_DIR, subdir))
           if subdir != '.' && subdir != '..'
-            Dir.foreach(File.join(WORKING_DIR, 'tmp', 'objects', subdir)) do |file|
+            Dir.foreach(File.join(KRON_DIR, 'tmp', 'objects', subdir)) do |file|
               unless File.exist?(File.join(OBJECTS_DIR, subdir, file))
-                FileUtils.cp File.join(WORKING_DIR, 'tmp', 'objects', subdir, file), File.join(OBJECTS_DIR, subdir, file)
+                FileUtils.cp File.join(KRON_DIR, 'tmp', 'objects', subdir, file), File.join(OBJECTS_DIR, subdir, file)
               end
             end
           end
         else
-          FileUtils.cp_r WORKING_DIR + 'tmp/objects/' + subdir + '/', OBJECTS_DIR + subdir
+          FileUtils.cp_r KRON_DIR + 'tmp/objects/' + subdir + '/', OBJECTS_DIR + subdir
         end
-        # unless File.exist?(File.join(CHANGESET_DIR, file))
-        #   FileUtils.cp File.join(WORKING_DIR, 'tmp', 'changeset', file), File.join(CHANGESET_DIR, file)
-        # end
       end
+      # remove tmp 文件
+      FileUtils.rm_rf File.join(KRON_DIR,'tmp')
     end
 
     def serve(port, token, multiple_serve = false, quiet = false)
