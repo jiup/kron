@@ -149,6 +149,7 @@ module Kron
       c.desc 'Show latest log of a specific branch'
       c.flag %i[b branch], arg_name: '<branch>'
       c.action do |_global_options, _options, _args|
+        assert_repo_exist
         exit_now! 'Command not implemented'
       end
     end
@@ -158,6 +159,7 @@ module Kron
       c.desc 'Show logs on a branch'
       c.flag %i[b branch], arg_name: '<branch>'
       c.action do |_global_options, _options, _args|
+        assert_repo_exist
         exit_now! 'Command not implemented'
       end
     end
@@ -170,7 +172,7 @@ module Kron
       c.flag %i[b branch], arg_name: '<branch>'
       c.action do |_global_options, _options, _args|
         help_now!('no arguments required') unless args.empty?
-
+        assert_repo_exist
         exit_now! 'Command not implemented'
       end
     end
@@ -180,6 +182,7 @@ module Kron
       c.desc 'Show head of a branch'
       c.flag %i[b branch], arg_name: '<branch>'
       c.action do |_global_options, _options, _args|
+        assert_repo_exist
         exit_now! 'Command not implemented'
       end
     end
@@ -187,6 +190,7 @@ module Kron
     desc 'Show tracking list for current revision'
     command [:ls, :list] do |c|
       c.action do |_global_options, _options, _args|
+        assert_repo_exist
         list_index
       end
     end
@@ -264,6 +268,7 @@ module Kron
       c.desc 'Suppress the output'
       c.switch %i[q quiet], negatable: false
       c.action do |_global_options, _options, _args|
+        assert_repo_exist
         exit_now! 'Command not implemented'
       end
     end
@@ -273,6 +278,7 @@ module Kron
     command [:pull, :fetch] do |c|
       c.action do |_global_options, _options, repo_uri|
         help_now!('repo_uri is required') if repo_uri.empty?
+        assert_repo_exist
         pull(repo_uri[0])
         exit_now! 'Command not implemented'
       end
@@ -283,6 +289,7 @@ module Kron
     command [:push, :sync] do |c|
       c.action do |_global_options, _options, repo_uri|
         help_now!('repo_uri is required') if repo_uri.empty?
+        assert_repo_exist
         exit_now! 'Command not implemented'
       end
     end
@@ -298,8 +305,8 @@ module Kron
       c.desc 'Specific token for remote service, if this field not given, an random token will be used'
       c.flag %i[t token], mask: true, arg_name: '<token>', default_value: SecureRandom.alphanumeric(DEFAULT_TOKEN)
       c.action do |_global_options, options, args|
-        assert_repo_exist
         help_now!('no arguments required') unless args.empty?
+        assert_repo_exist
         serve(options[:port], options[:token], options[:m], options[:q])
       end
     end
