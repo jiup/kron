@@ -233,21 +233,23 @@ module Kron
       c.default_command :list
     end
 
-    desc 'Switch branches and restore working directory files'
-    arg '<commit>'
+    desc 'Switch branches/revisions and restore working directory files'
+    arg '<branch/revision>'
     command [:checkout, :goto] do |c|
       c.desc 'Proceed even if the index or the working directory differs from HEAD'
       c.switch %i[f force], negatable: false
+      c.desc 'Suppress the output'
+      c.switch %i[q quiet], negatable: false
       c.desc 'Prepare for working on a specific <branch>'
       c.flag %i[b branch], arg_name: '<branch>'
       c.action do |_global_options, options, args|
         assert_repo_exist
         if options[:b].nil?
           help_now!('single argument <commit> required') if args.length != 1
-          checkout(args[0], false, options[:f])
+          checkout(args[0], false, options[:f], !options[:q])
         else
           help_now!('no arguments required') unless args.empty?
-          checkout(options[:b], true, options[:f])
+          checkout(options[:b], true, options[:f], !options[:q])
         end
       end
     end
