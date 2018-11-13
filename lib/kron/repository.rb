@@ -347,7 +347,8 @@ module Kron
         FileUtils.cp File.join(OBJECTS_DIR, dir, file_hash), File.join(WORKING_DIR, file_name)
         new_index.put [file_name, paras].flatten
       end
-      revisions.current = [new_branch, revision_id]
+      cur_rev = revisions.rev_map[revision_id]
+      revisions.current = [new_branch, cur_rev]
       sync_index(new_index)
       sync_rev(revisions)
       if verbose
