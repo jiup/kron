@@ -272,7 +272,9 @@ module Kron
     command [:pull, :fetch] do |c|
       c.action do |_global_options, _options, repo_uri|
         help_now!('repo_uri is required') if repo_uri.empty?
+        p '======='
         pull(repo_uri[0])
+
         exit_now! 'Command not implemented'
       end
     end

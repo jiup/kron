@@ -485,12 +485,13 @@ module Kron
       end
     end
 
-    def pull(name, tar_branch = 'zhang')
+    def pull(repo_uri, tar_branch = 'master',force = false, verbose = false)
       # FileUtils.rm_rf File.join(WORKING_DIR, 'tmp') if File.exist? File.join(WORKING_DIR, 'tmp')
 
-
+      Kron::Helper::RepoFetcher.from(repo_uri, force, verbose)
+      return
       FileUtils.mkdir File.join(WORKING_DIR, '.tmp')
-      Zip::File.open(name, Zip::File::CREATE) {|zipfile|
+      Zip::File.open(repo_name, Zip::File::CREATE) {|zipfile|
         zipfile.each do |file|
           fpath = File.join(WORKING_DIR, '.tmp', file.name)
           zipfile.extract(file, fpath) unless File.exist?(fpath)
