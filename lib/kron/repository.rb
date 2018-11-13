@@ -269,7 +269,7 @@ module Kron
       sync_rev revisions
     end
 
-    def checkout(target, is_branch = false, force = false)
+    def checkout(target, is_branch = false, force = false, verbose = true)
       revisions = load_rev
       index = load_index
       stage = load_stage
@@ -304,6 +304,7 @@ module Kron
         elsif matched.empty?
           # if no revision matched, downgrade to branch checking
           if revisions.heads.key?(target)
+            is_branch = true
             new_branch = target
             revision_id = revisions.heads[target].id
           else
@@ -349,6 +350,19 @@ module Kron
       revisions.current = [new_branch, revision_id]
       sync_index(new_index)
       sync_rev(revisions)
+      if verbose
+        if is_branch
+          puts "Switched to branch '#{target}'"
+        else
+          puts "Switched to revision '#{revision_id[0..DEFAULT_ABBREV]}'"
+          puts
+          puts "You are now in 'detached HEAD' state, you need to declare a new"
+          puts "branch (use 'kron branch add <branch>') before commit them, and you"
+          puts "can discard you modification by performing another 'kron checkout'"
+          puts
+          puts "HEAD is now at #{revision_id}"
+        end
+      end
     end
 
     def status
