@@ -561,8 +561,20 @@ module Kron
       raise LoadError, 'not a kron repository (run \'kron init\' to create a new repo)' unless Dir.exist?(KRON_DIR)
     end
 
+    def fetch_branch(brch, recursive = nil)
+      rev = brch.id if brch
+      log(rev)
+      fetch_branch(brch.p_node, recursive) if recursive && brch
+    end
+
     def log(revision = nil, branch = nil)
       return nil if !branch && !revision
+
+      if branch
+        brch = load_rev.heads[branch]
+        fetch_branch(brch)
+        return
+      end
       cs = Kron::Domain::Changeset.new
       cs.rev_id = revision
       cs = load_changeset(cs)
@@ -570,12 +582,17 @@ module Kron
         puts "commit: #{revision}".colorize(color: :yellow)
         puts cs.to_s.string
       else
-        puts "unmatched revision id"
+        puts 'unmatched revision id'
       end
     end
 
     def logs(branch = nil)
       buffer = {}
+      if branch
+        brch = load_rev.heads[branch]
+        fetch_branch(brch, 1)
+        return
+      end
       Dir.glob(CHANGESET_DIR + '*').each do |file_path|
         revision = file_path.split('/')[-1]
         cs = Kron::Domain::Changeset.new
@@ -583,8 +600,7 @@ module Kron
         cs = load_changeset(cs)
         buffer[cs.timestamp] = revision
       end
-
-      buffer.keys.sort.reverse.each{|e| log(buffer[e])}
+      buffer.keys.sort.reverse_each { |e| log(buffer[e]) }
     end
 
     def cat(rev_id = nil, branch = nil, paths)
