@@ -488,9 +488,6 @@ module Kron
     end
 
     def pull(name, tar_branch = 'zhang')
-      # FileUtils.rm_rf File.join(WORKING_DIR, 'tmp') if File.exist? File.join(WORKING_DIR, 'tmp')
-
-
       FileUtils.mkdir File.join(WORKING_DIR, '.tmp')
       Zip::File.open(name, Zip::File::CREATE) do |zip_file|
         zip_file.each do |file|
@@ -521,7 +518,6 @@ module Kron
       tmp_now_revision.p_node = revisions.rev_map[ancestor_id]
       # sync_rev revisions
 
-
       # combine manifest
       Dir.foreach(File.join(WORKING_DIR, 'tmp', 'manifest')) do |file|
         unless File.exist?(File.join(MANIFEST_DIR, file))
@@ -534,7 +530,7 @@ module Kron
           FileUtils.cp File.join(WORKING_DIR, 'tmp', 'changeset', file), File.join(CHANGESET_DIR, file)
         end
       end
-      #combine objects
+      # combine objects
       Dir.foreach(File.join(WORKING_DIR, 'tmp', 'objects')) do |subdir|
         if File.exist?(File.join(OBJECTS_DIR, subdir))
           if subdir != '.' && subdir != '..'
