@@ -2,6 +2,7 @@ require 'set'
 require 'digest'
 require 'pathname'
 require 'colorize'
+require 'kron/constant'
 require 'kron/helper/repo_fetcher'
 require 'kron/helper/repo_server'
 require 'kron/accessor/index_accessor'
@@ -34,7 +35,7 @@ module Kron
     end
 
     def clone(repo_uri, force = false, verbose = false)
-      if Kron::Helper::RepoFetcher.from(repo_uri, force, verbose)
+      if Kron::Helper::RepoFetcher.from(repo_uri, BASE_DIR, force, verbose)
         # TODO: recovery the working directory from HEAD revision
       end
     end
