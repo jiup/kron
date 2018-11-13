@@ -286,7 +286,7 @@ module Kron
           next unless wd.include? file_path
           if Digest::SHA1.file(file_path).hexdigest != args[0]
             raise StandardError, "modified files unstaged, use 'kron status' to check, '-f' to overwrite"
-          endd
+          end
         end
 
         untracked = wd - tracked
