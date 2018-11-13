@@ -45,7 +45,7 @@ module Kron
       file_paths = []
       if File.directory? file_path
         if recursive
-          file_paths = Dir[File.join(file_path, '**', '*')].reject { |fn| File.directory?(fn) }
+          file_paths = Dir[File.join(file_path, '**', '*')].reject {|fn| File.directory?(fn)}
         else
           Dir.foreach(file_path) do |path|
             file_paths << path if File.file? path
@@ -101,7 +101,7 @@ module Kron
       file_paths = []
       if File.directory? file_path
         if recursive
-          file_paths = Dir[File.join(file_path, '**', '*')].reject { |fn| File.directory?(fn) }
+          file_paths = Dir[File.join(file_path, '**', '*')].reject {|fn| File.directory?(fn)}
         else
           raise StandardError, "Not removing '#{file_path}', recursively without -r"
         end
@@ -155,7 +155,7 @@ module Kron
       end
 
       # load Revisions
-      revisions = load_rev # TODO: not implemented
+      revisions = load_rev
       if revisions.current[0].nil?
         raise StandardError, "HEAD detached at #{revisions.current[1]}"
       end
@@ -179,16 +179,15 @@ module Kron
       # add Changeset
       cs = Kron::Domain::Changeset.new
       cs.rev_id = 'new_changeset.tmp'
-      stage.to_add.each { |f| cs.put('@added_files', f) }
-      stage.to_modify.each { |f| cs.put('@modified_files', f) }
-      stage.to_delete.each { |f| cs.put('@deleted_files', f) }
+      stage.to_add.each {|f| cs.put('@added_files', f)}
+      stage.to_modify.each {|f| cs.put('@modified_files', f)}
+      stage.to_delete.each {|f| cs.put('@deleted_files', f)}
       cs.commit_message = message
       cs.author = author
       cs.timestamp = Time.now.to_i
       # add a revision
       revision = Kron::Domain::Revision.new
       revision.p_node = revisions.current[1]
-      p revision.p_node
       sync_changeset(cs)
       sync_manifest(mf)
       manifest_hash = Digest::SHA1.file(MANIFEST_DIR + 'new_manifest.tmp').hexdigest
@@ -259,7 +258,6 @@ module Kron
     #   b_to_delete = revisions.heads[b_name]
     #
     #   revisions.heads.delete(b_name)
-    #
     # end
 
     def rename_branch(old_name, new_name)
@@ -280,11 +278,17 @@ module Kron
         unless stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
           raise StandardError, 'something in stage need to commit'
         end
-
-        tracked = Set.new
-        index.each_pair { |file_path, _args| tracked << file_path }
         wd = SortedSet.new
-        Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
+        Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
+        tracked = Set.new
+        index.each_pair do |file_path, _args|
+          tracked << file_path
+          next unless wd.include? file_path
+          if Digest::SHA1.file(file_path).hexdigest != _args[0]
+            raise StandardError, "#{file_path} modify but not add to stage"
+          end
+        end
+
         untracked = wd - tracked
       end
 
@@ -327,7 +331,7 @@ module Kron
         unless overwritten.empty?
           puts 'The following untracked working directory files would be overwritten by checkout:'
           puts
-          overwritten.each { |path| puts "        #{path}".colorize(color: :red) }
+          overwritten.each {|path| puts "        #{path}".colorize(color: :red)}
           puts
           puts 'Please move or remove them before you switch branches.'
           return
@@ -371,7 +375,7 @@ module Kron
       index = load_index
       stage = load_stage
       tracked = Set.new
-      index.each_pair { |file_path, _args| tracked << file_path }
+      index.each_pair {|file_path, _args| tracked << file_path}
       n_stage_modified = []
       n_stage_deleted = []
       tracked.each do |p|
@@ -382,7 +386,7 @@ module Kron
         end
       end
       wd = SortedSet.new
-      Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
+      Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
       untracked = wd - tracked
 
       # exclude by parsing .kronignore file
@@ -410,9 +414,9 @@ module Kron
         puts 'Changes to be committed:'
         puts '  (use \'kron rm -c stage\' to unstage)'
         puts
-        stage.to_add.each { |f| puts "        new file:   #{f}".colorize(color: :green) }
-        stage.to_modify.each { |f| puts "        modified:   #{f}".colorize(color: :yellow) }
-        stage.to_delete.each { |f| puts "        deleted:   #{f}".colorize(color: :red) }
+        stage.to_add.each {|f| puts "        new file:   #{f}".colorize(color: :green)}
+        stage.to_modify.each {|f| puts "        modified:   #{f}".colorize(color: :yellow)}
+        stage.to_delete.each {|f| puts "        deleted:   #{f}".colorize(color: :red)}
         puts
       end
       not_staged = n_stage_modified.empty? && n_stage_deleted.empty?
@@ -421,15 +425,15 @@ module Kron
         puts '  (use \'kron add <file>...\' to update what will be committed)'
         puts '  (use \'kron checkout -f\' to discard changes in working directory)'
         puts
-        n_stage_modified.each { |f| puts "        modified:   #{f}".colorize(color: :red) }
-        n_stage_deleted.each { |f| puts "        deleted:   #{f}".colorize(color: :red) }
+        n_stage_modified.each {|f| puts "        modified:   #{f}".colorize(color: :red)}
+        n_stage_deleted.each {|f| puts "        deleted:   #{f}".colorize(color: :red)}
         puts
       end
       unless untracked.empty?
         puts 'Untracked files:'
         puts '  (use \'kron add <file>...\' to include in what will be committed)'
         puts
-        untracked.each { |f| puts "        #{f}".colorize(color: :red) }
+        untracked.each {|f| puts "        #{f}".colorize(color: :red)}
         puts
       end
       if nothing_to_commit
@@ -447,7 +451,7 @@ module Kron
 
     def list_index
       index = load_index
-      if !index.each_pair.empty?
+      if index.each_pair.size > 0
         puts 'Tracked files:'
         size_limit = index.each_pair.map {|e| e[1][1].to_s.length}.max
         path_limit = index.each_pair.map {|e| e[0].to_s.length}.max
@@ -485,34 +489,29 @@ module Kron
       # FileUtils.rm_rf File.join(WORKING_DIR, 'tmp') if File.exist? File.join(WORKING_DIR, 'tmp')
 
 
-      # FileUtils.mkdir File.join(WORKING_DIR, 'tmp')
-      # Zip::File.open(name, Zip::File::CREATE) {|zipfile|
-      #   zipfile.each do |file|
-      #     fpath = File.join(WORKING_DIR, 'tmp', file.name)
-      #     zipfile.extract(file, fpath) unless File.exist?(fpath)
-      #   end
-      # }
+      FileUtils.mkdir File.join(WORKING_DIR, '.tmp')
+      Zip::File.open(name, Zip::File::CREATE) {|zipfile|
+        zipfile.each do |file|
+          fpath = File.join(WORKING_DIR, '.tmp', file.name)
+          zipfile.extract(file, fpath) unless File.exist?(fpath)
+        end
+      }
       tar_revisions = load_rev(File.join(BASE_DIR, 'tmp', 'rev'))
       revisions = load_rev
       cur_revision = revisions.heads[revisions.current[0]]
       tar_cur_revision = tar_revisions.heads[tar_branch]
       tmp_revision = tar_cur_revision
       ancestor_id = 0
-      # p tmp_revision
       until tmp_revision.nil?
-        # p tmp_revision
         if revisions.rev_map.key? tmp_revision.id
           ancestor_id = tmp_revision.id
           break
         else
           tmp_now_revision = tmp_revision
           tmp_revision = tmp_revision.p_node
-          # p tmp_revision
           revisions.rev_map.store(tmp_revision.id, tmp_revision)
         end
       end
-      # p ancestor_id
-      # p tmp_now_revision
 
       raise StandardError, 'can not find common ancestor' if ancestor_id == 0
       # update revisions.heads {tar_branch:tar_cur_revision}
