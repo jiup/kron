@@ -1,3 +1,4 @@
+require 'colorize'
 module Kron
   module Domain
     class Changeset
@@ -7,7 +8,8 @@ module Kron
 
       def initialize(rev_id = nil)
         @rev_id = rev_id
-        @commit_message = @author = ''
+        @author = ''
+        @commit_message = ''
         @timestamp = Time.now.asctime
         @added_files = Set.new
         @modified_files = Set.new
@@ -45,25 +47,24 @@ module Kron
       def to_s
         buffer = StringIO.new
         instance_variables.each do |ivar|
-          buffer << "#{ivar}: "
-          if ivar.to_s =~ /@*_files/
-            instance_variable_get(ivar).each do |val|
-              buffer << val
-            end
-            buffer.puts ''
-          elsif ivar.to_s != '@rev_id'
+          unless ivar.to_s =~ /@*_files|@rev_id/
+            buffer << "#{ivar}: "[1..-1].capitalize
             buffer.puts instance_variable_get(ivar)
           end
         end
+        @added_files.each{|e| buffer.puts "        new file: #{e}".colorize(color: :green)}
+        @modified_files.each {|f| buffer.puts "        modified: #{f}".colorize(color: :yellow)}
+        @deleted_files.each {|f| buffer.puts "        deleted: #{f}".colorize(color: :red)}
+        buffer.puts ''
         buffer
       end
     end
   end
 end
 
-a = Kron::Domain::Changeset.new(1)
-a.put("@added_files", "time runs out")
-a.put("@added_files", "time runs out")
-p a
-# # a.each_attr{|a,v| p a,v}
-# print a.to_s
+# a = Kron::Domain::Changeset.new(1)
+# a.put("@added_files", "time runs out")
+# a.put("@added_files", "time runs out2")
+# puts a.added_files.to_s
+# a.each_attr{|a,v| p a,v}
+# # print a.to_s

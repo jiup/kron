@@ -436,11 +436,11 @@ module Kron
 
     def log(revision = nil, branch = nil)
       return nil if !branch && !revision
-
       cs = Kron::Domain::Changeset.new
       cs.rev_id = revision
       cs = load_changeset(cs)
       if cs
+        puts "commit: #{revision}".colorize(color: :yellow)
         puts cs.to_s.string
       else
         puts "unmatched revision id"
@@ -448,11 +448,16 @@ module Kron
     end
 
     def logs(branch = nil)
-      buffer = StringIO.new
+      buffer = {}
       Dir.glob(CHANGESET_DIR + '*').each do |file_path|
-        buffer.puts log(file_path.split('/')[-1])
+        revision = file_path.split('/')[-1]
+        cs = Kron::Domain::Changeset.new
+        cs.rev_id = revision
+        cs = load_changeset(cs)
+        buffer[cs.timestamp] = revision
       end
-      puts buffer.string
+
+      buffer.keys.sort.reverse.each{|e| log(buffer[e])}
     end
 
     def cat(rev_id = nil, branch = nil, paths)
@@ -475,6 +480,16 @@ module Kron
         end
       end
       puts buffer.string
+    end
+
+    def head(branch = nil)
+      rvs = load_rev
+      rvs.heads.keys.each do |branch_name|
+        if (branch == branch_name) || branch.nil?
+          print "    #{branch_name}".colorize(color: :light_cyan)
+          puts " <- HEAD #{rvs.heads[branch_name].id}".colorize(color: :yellow)
+        end
+      end
     end
 
   end

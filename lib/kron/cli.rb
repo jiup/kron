@@ -151,7 +151,7 @@ module Kron
       c.flag %i[c revision], arg_name: '<rev_id>'
       c.desc 'Show latest file revision of a branch'
       c.flag %i[b branch], arg_name: '<branch>'
-      c.action do |global_options, options, paths|
+      c.action do |_global_options, options, paths|
         exit_now!('file paths required') if paths.empty?
         cat(options[:c], options[:b], paths)
       end
@@ -161,8 +161,8 @@ module Kron
     command [:head, :heads] do |c|
       c.desc 'Show head of a branch'
       c.flag %i[b branch], arg_name: '<branch>'
-      c.action do |_global_options, _options, _args|
-        exit_now! 'Command not implemented'
+      c.action do |_global_options, options, _args|
+        head(options[:b])
       end
     end
 
