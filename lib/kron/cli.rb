@@ -59,7 +59,7 @@ module Kron
 
     desc 'Add file contents to the index'
     arg '<file_name>', :required
-    command :add do |c|
+    command [:add, :stage] do |c|
       c.desc 'Overwrite if file(s) already added to stage'
       c.switch %i[f force], negatable: false
       c.desc 'Allow recursive add when a leading directory name is given'
@@ -92,7 +92,24 @@ module Kron
         file_paths.each do |file_path|
           remove(file_path, !options[:f], options[:r], !options[:c], !options[:q])
         end
+      end
+    end
 
+    desc 'Unstage files from the repository index'
+    arg '<file_name>', :required
+    command :unstage do |c|
+      c.desc 'Override the up-to-date check'
+      c.switch %i[f force], negatable: false
+      c.desc 'Allow recursive removal when a leading directory name is given'
+      c.switch %i[r], negatable: false
+      c.desc 'Suppress the output'
+      c.switch %i[q quiet], negatable: false
+      c.action do |_global_options, options, file_paths|
+        help_now!('file_name is required') if file_paths.empty?
+        assert_repo_exist
+        file_paths.each do |file_path|
+          remove(file_path, !options[:f], options[:r], false, !options[:q])
+        end
       end
     end
 
@@ -131,8 +148,9 @@ module Kron
       c.flag %i[c revision], arg_name: '<rev_id>'
       c.desc 'Show latest log of a specific branch'
       c.flag %i[b branch], arg_name: '<branch>'
-      c.action do |_global_options, options, _arg|
-        log(options[:c], options[:b])
+      c.action do |_global_options, _options, _args|
+        assert_repo_exist
+        exit_now! 'Command not implemented'
       end
     end
 
@@ -140,8 +158,9 @@ module Kron
     command :logs do |c|
       c.desc 'Show logs on a branch'
       c.flag %i[b branch], arg_name: '<branch>'
-      c.action do |_global_options, options, _args|
-        logs(options[:b])
+      c.action do |_global_options, _options, _args|
+        assert_repo_exist
+        exit_now! 'Command not implemented'
       end
     end
 
@@ -151,9 +170,10 @@ module Kron
       c.flag %i[c revision], arg_name: '<rev_id>'
       c.desc 'Show latest file revision of a branch'
       c.flag %i[b branch], arg_name: '<branch>'
-      c.action do |_global_options, options, paths|
-        exit_now!('file paths required') if paths.empty?
-        cat(options[:c], options[:b], paths)
+      c.action do |_global_options, _options, _args|
+        help_now!('no arguments required') unless args.empty?
+        assert_repo_exist
+        exit_now! 'Command not implemented'
       end
     end
 
@@ -161,14 +181,16 @@ module Kron
     command [:head, :heads] do |c|
       c.desc 'Show head of a branch'
       c.flag %i[b branch], arg_name: '<branch>'
-      c.action do |_global_options, options, _args|
-        head(options[:b])
+      c.action do |_global_options, _options, _args|
+        assert_repo_exist
+        exit_now! 'Command not implemented'
       end
     end
 
     desc 'Show tracking list for current revision'
     command [:ls, :list] do |c|
       c.action do |_global_options, _options, _args|
+        assert_repo_exist
         list_index
       end
     end
@@ -179,6 +201,7 @@ module Kron
       c.desc 'List all branches'
       c.command :list do |cc|
         cc.action do |_global_options, _options, args|
+          assert_repo_exist
           help_now!('no arguments required') unless args.empty?
           list_branch
         end
@@ -215,21 +238,23 @@ module Kron
       c.default_command :list
     end
 
-    desc 'Switch branches and restore working directory files'
-    arg '<commit>'
+    desc 'Switch branches/revisions and restore working directory files'
+    arg '<branch/revision>'
     command [:checkout, :goto] do |c|
       c.desc 'Proceed even if the index or the working directory differs from HEAD'
       c.switch %i[f force], negatable: false
+      c.desc 'Suppress the output'
+      c.switch %i[q quiet], negatable: false
       c.desc 'Prepare for working on a specific <branch>'
       c.flag %i[b branch], arg_name: '<branch>'
       c.action do |_global_options, options, args|
         assert_repo_exist
         if options[:b].nil?
           help_now!('single argument <commit> required') if args.length != 1
-          checkout(args[0], false, options[:f])
+          checkout(args[0], false, options[:f], !options[:q])
         else
           help_now!('no arguments required') unless args.empty?
-          checkout(options[:b], true, options[:f])
+          checkout(options[:b], true, options[:f], !options[:q])
         end
       end
     end
@@ -243,6 +268,7 @@ module Kron
       c.desc 'Suppress the output'
       c.switch %i[q quiet], negatable: false
       c.action do |_global_options, _options, _args|
+        assert_repo_exist
         exit_now! 'Command not implemented'
       end
     end
@@ -252,6 +278,8 @@ module Kron
     command [:pull, :fetch] do |c|
       c.action do |_global_options, _options, repo_uri|
         help_now!('repo_uri is required') if repo_uri.empty?
+        assert_repo_exist
+        pull(repo_uri[0])
         exit_now! 'Command not implemented'
       end
     end
@@ -261,6 +289,7 @@ module Kron
     command [:push, :sync] do |c|
       c.action do |_global_options, _options, repo_uri|
         help_now!('repo_uri is required') if repo_uri.empty?
+        assert_repo_exist
         exit_now! 'Command not implemented'
       end
     end
@@ -276,8 +305,8 @@ module Kron
       c.desc 'Specific token for remote service, if this field not given, an random token will be used'
       c.flag %i[t token], mask: true, arg_name: '<token>', default_value: SecureRandom.alphanumeric(DEFAULT_TOKEN)
       c.action do |_global_options, options, args|
-        assert_repo_exist
         help_now!('no arguments required') unless args.empty?
+        assert_repo_exist
         serve(options[:port], options[:token], options[:m], options[:q])
       end
     end

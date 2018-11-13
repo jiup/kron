@@ -6,9 +6,8 @@ module Kron
       # path
       # @return
       # Return a revision obj
-      def load_rev
+      def load_rev(path = REV_PATH)
         # p BASE_DIR
-        path = REV_PATH.to_s
         if File.exists?(path)
           content = File.read(path)
           content = content.force_encoding("ASCII-8BIT")
