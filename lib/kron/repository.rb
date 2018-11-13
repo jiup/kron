@@ -493,10 +493,10 @@ module Kron
 
       if File.file? File.join(KRON_DIR, '.kron')
         FileUtils.mkdir File.join(KRON_DIR, 'tmp')
-        Zip::File.open(File.join(KRON_DIR, File.basename(repo_uri)), Zip::File::CREATE) {|zipfile|
-          zipfile.each do |file|
-            fpath = File.join(KRON_DIR, 'tmp', file.name)
-            zipfile.extract(file, fpath) unless File.exist?(fpath)
+        Zip::File.open(File.join(KRON_DIR, File.basename(repo_uri)), Zip::File::CREATE) {|zip_file|
+          zip_file.each do |file|
+            f_path = File.join(KRON_DIR, 'tmp', file.name)
+            zip_file.extract(file, f_path) unless File.exist?(f_path)
           end
         }
       else
