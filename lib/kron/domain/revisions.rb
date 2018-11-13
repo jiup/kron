@@ -16,7 +16,7 @@ module Kron
         # sync_manifest(manifest)
         @current[1] = revision
         @heads.store(current[0], current[1])
-        branch_hook.add revision
+        @branch_hook.add revision
         @rev_map.store(revision.id, revision)
       end
 

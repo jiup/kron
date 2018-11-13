@@ -43,7 +43,7 @@ module Kron
 
       def initialize(port, token = nil, multiple = false, quiet = false)
         unset = port.nil? ? true : false
-        @port = port = 80 if unset
+        @port = unset ? port = 80 : port
         if port_open?(Socket.gethostname, port, 0.0001)
           raise StandardError "Port #{port} already in use" unless unset
 
