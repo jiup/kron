@@ -361,7 +361,7 @@ module Kron
         if is_branch
           puts "Switched to branch '#{target}'"
         else
-          puts "Switched to revision '#{revision_id[0..DEFAULT_ABBREV]}'"
+          puts "Switched to revision '#{revision_id[0..DEFAULT_ABBREV - 1]}'"
           puts
           puts "You are now in 'detached HEAD' state, you need to declare a new"
           puts "branch (use 'kron branch add <branch>') before commit them, and you"
@@ -401,7 +401,8 @@ module Kron
 
       rev = load_rev
       if rev.current[0].nil?
-        puts "HEAD detached at #{rev.current[1]}".colorize(color: :red)
+        print 'HEAD detached at '.colorize(color: :red)
+        puts rev.current[1].id[0..DEFAULT_ABBREV - 1].to_s.colorize(color: :red, mode: :bold)
       else
         print 'On branch'
         puts " #{rev.current[0]}".colorize(color: :light_cyan, mode: :bold)
