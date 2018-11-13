@@ -281,12 +281,12 @@ module Kron
         wd = SortedSet.new
         Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
         tracked = Set.new
-        index.each_pair do |file_path, _args|
+        index.each_pair do |file_path, args|
           tracked << file_path
           next unless wd.include? file_path
-          if Digest::SHA1.file(file_path).hexdigest != _args[0]
-            raise StandardError, "#{file_path} modify but not add to stage"
-          end
+          if Digest::SHA1.file(file_path).hexdigest != args[0]
+            raise StandardError, "modified files unstaged, use 'kron status' to check, '-f' to overwrite"
+          endd
         end
 
         untracked = wd - tracked
