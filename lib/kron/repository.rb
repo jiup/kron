@@ -487,7 +487,7 @@ module Kron
       end
     end
 
-    def pull(repo_uri, tar_branch = 'jiup', force = false, verbose = false)
+    def pull(repo_uri, tar_branch = 'master', force = false, verbose = false)
       # FileUtils.rm_rf File.join(WORKING_DIR, 'tmp') if File.exist? File.join(WORKING_DIR, 'tmp')
       Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
 
