@@ -44,7 +44,7 @@ module Kron
       file_paths = []
       if File.directory? file_path
         if recursive
-          file_paths = Dir[File.join(file_path, '**', '*')].reject {|fn| File.directory?(fn)}
+          file_paths = Dir[File.join(file_path, '**', '*')].reject { |fn| File.directory?(fn) }
         else
           Dir.foreach(file_path) do |path|
             file_paths << path if File.file? path
@@ -100,7 +100,7 @@ module Kron
       file_paths = []
       if File.directory? file_path
         if recursive
-          file_paths = Dir[File.join(file_path, '**', '*')].reject {|fn| File.directory?(fn)}
+          file_paths = Dir[File.join(file_path, '**', '*')].reject { |fn| File.directory?(fn) }
         else
           raise StandardError, "Not removing '#{file_path}', recursively without -r"
         end
@@ -178,9 +178,9 @@ module Kron
       # add Changeset
       cs = Kron::Domain::Changeset.new
       cs.rev_id = 'new_changeset.tmp'
-      stage.to_add.each {|f| cs.put('@added_files', f)}
-      stage.to_modify.each {|f| cs.put('@modified_files', f)}
-      stage.to_delete.each {|f| cs.put('@deleted_files', f)}
+      stage.to_add.each { |f| cs.put('@added_files', f) }
+      stage.to_modify.each { |f| cs.put('@modified_files', f) }
+      stage.to_delete.each { |f| cs.put('@deleted_files', f) }
       cs.commit_message = message
       cs.author = author
       cs.timestamp = Time.now.to_i
@@ -273,25 +273,23 @@ module Kron
       revisions = load_rev
       index = load_index
       stage = load_stage
+      untracked = []
       unless force
         unless stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
           raise StandardError, 'something in stage need to commit'
         end
 
-        # tracked = Set.new
-        # index.each_pair {|file_path, _args| tracked << file_path}
-        # wd = SortedSet.new
-        # Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
-        # unless (wd - tracked).empty?
-        #   raise StandardError, "untracked files #{(wd - tracked)}"
-        # end
+        tracked = Set.new
+        index.each_pair { |file_path, _args| tracked << file_path }
+        wd = SortedSet.new
+        Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
+        untracked = wd - tracked
       end
 
       if is_branch
         if revisions.heads.key?(target)
           new_branch = target
           revision_id = revisions.heads[target].id
-
         else
           raise StandardError, "branch '#{target}' not found"
         end
@@ -304,17 +302,38 @@ module Kron
           new_branch = nil
           revision_id = matched[0]
         elsif matched.empty?
-          raise StandardError, "revision '#{target}' not found"
+          # if no revision matched, downgrade to branch checking
+          if revisions.heads.key?(target)
+            new_branch = target
+            revision_id = revisions.heads[target].id
+          else
+            raise StandardError, "revision '#{target}' not found"
+          end
         else
-          raise StandardError, "revision '#{target}' is not only one"
+          raise StandardError, "revision '#{target}' is ambiguous"
         end
       end
       mf = load_manifest(revision_id)
+
+      unless force
+        # check if its safe to proceed
+        overwritten = []
+        untracked.each do |path|
+          overwritten << path unless mf[path].nil?
+        end
+        unless overwritten.empty?
+          puts 'The following untracked working directory files would be overwritten by checkout:'
+          puts
+          overwritten.each { |path| puts "        #{path}".colorize(color: :red) }
+          puts
+          puts 'Please move or remove them before you switch branches.'
+          return
+        end
+      end
+
       new_index = Kron::Domain::Index.new
       now_files = Set.new index.each_pair.collect { |kv| kv[0] }
-
       target_files = Set.new mf.each_pair.collect { |kv| kv[0] }
-
       to_rm_files = now_files - target_files
       to_rm_files.each do |file|
         FileUtils.rm_f File.join(WORKING_DIR,file)
@@ -327,9 +346,7 @@ module Kron
         FileUtils.cp File.join(OBJECTS_DIR, dir, file_hash), File.join(WORKING_DIR, file_name)
         new_index.put [file_name, paras].flatten
       end
-
       revisions.current = [new_branch, revision_id]
-
       sync_index(new_index)
       sync_rev(revisions)
     end
@@ -338,7 +355,7 @@ module Kron
       index = load_index
       stage = load_stage
       tracked = Set.new
-      index.each_pair {|file_path, _args| tracked << file_path}
+      index.each_pair { |file_path, _args| tracked << file_path }
       n_stage_modified = []
       n_stage_deleted = []
       tracked.each do |p|
@@ -349,7 +366,7 @@ module Kron
         end
       end
       wd = SortedSet.new
-      Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
+      Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
       untracked = wd - tracked
 
       # exclude by parsing .kronignore file
@@ -368,7 +385,7 @@ module Kron
         print 'On branch'
         puts " #{rev.current[0]}".colorize(color: :light_cyan, mode: :bold)
       end
-      if rev.current[1] == rev.heads[rev.current[0]].id
+      if rev.current[1] == rev.heads[rev.current[0]]
         puts 'Your branch is up to date.'
         puts
       end
@@ -377,9 +394,9 @@ module Kron
         puts 'Changes to be committed:'
         puts '  (use \'kron rm -c stage\' to unstage)'
         puts
-        stage.to_add.each {|f| puts "        new file: #{f}".colorize(color: :green)}
-        stage.to_modify.each {|f| puts "        modified: #{f}".colorize(color: :yellow)}
-        stage.to_delete.each {|f| puts "        deleted: #{f}".colorize(color: :red)}
+        stage.to_add.each { |f| puts "        new file:   #{f}".colorize(color: :green) }
+        stage.to_modify.each { |f| puts "        modified:   #{f}".colorize(color: :yellow) }
+        stage.to_delete.each { |f| puts "        deleted:   #{f}".colorize(color: :red) }
         puts
       end
       not_staged = n_stage_modified.empty? && n_stage_deleted.empty?
@@ -388,20 +405,24 @@ module Kron
         puts '  (use \'kron add <file>...\' to update what will be committed)'
         puts '  (use \'kron checkout -f\' to discard changes in working directory)'
         puts
-        n_stage_modified.each {|f| puts "        modified: #{f}".colorize(color: :red)}
-        n_stage_deleted.each {|f| puts "        deleted: #{f}".colorize(color: :red)}
+        n_stage_modified.each { |f| puts "        modified:   #{f}".colorize(color: :red) }
+        n_stage_deleted.each { |f| puts "        deleted:   #{f}".colorize(color: :red) }
         puts
       end
       unless untracked.empty?
         puts 'Untracked files:'
         puts '  (use \'kron add <file>...\' to include in what will be committed)'
         puts
-        untracked.each {|f| puts "        #{f}".colorize(color: :red)}
+        untracked.each { |f| puts "        #{f}".colorize(color: :red) }
         puts
       end
       if nothing_to_commit
         if not_staged
-          puts 'nothing to commit, working directory clean'
+          if untracked.empty?
+            puts 'nothing to commit, working directory clean'
+          else
+            puts 'nothing added to commit but untracked files present (use "kron add" to track)'
+          end
         else
           puts 'no changes added to commit (use \'kron add\' to stage changes)'
         end

@@ -233,8 +233,8 @@ module Kron
       c.default_command :list
     end
 
-    desc 'Switch branches and restore working directory files'
-    arg '<commit>'
+    desc 'Switch branches/revisions and restore working directory files'
+    arg '<branch/revision>'
     command [:checkout, :goto] do |c|
       c.desc 'Proceed even if the index or the working directory differs from HEAD'
       c.switch %i[f force], negatable: false
