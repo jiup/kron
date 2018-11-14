@@ -558,7 +558,11 @@ module Kron
     end
 
     def fetch_branch(brch, recursive = nil)
-      rev = brch.id if brch
+      if brch
+        rev = brch.id
+      else
+        return
+      end
       log(rev)
       fetch_branch(brch.p_node, recursive) if recursive && brch
     end
@@ -566,25 +570,42 @@ module Kron
     def log(revision = nil, branch = nil)
       if branch
         brch = load_rev.heads[branch]
-        fetch_branch(brch)
+        if brch
+          fetch_branch(brch)
+        else
+          puts "branch '#{branch}' not found"
+        end
         return
+      elsif revision
+        matched = []
+        revisions = load_rev
+        revisions.rev_map.each_key do |id|
+          matched << id unless (id =~ /#{revision}/).nil?
+        end
+        unless matched.size == 1
+          raise StandardError, "revision '#{revision}' not found"
+        end
       end
       cs = Kron::Domain::Changeset.new
-      cs.rev_id = revision
+      cs.rev_id = matched[0]
       cs = load_changeset(cs)
       if cs
-        puts "commit: #{revision}".colorize(color: :yellow)
+        puts "commit: #{matched[0]}".colorize(color: :yellow)
         puts cs.to_s.string
       else
-        puts 'unmatched revision id'
+        puts "revision id '#{rev_id}' not found"
       end
     end
 
     def logs(branch = nil)
       buffer = {}
+      brch = load_rev.heads[branch]
       if branch
-        brch = load_rev.heads[branch]
-        fetch_branch(brch, 1)
+        if brch
+          fetch_branch(brch, 1)
+        else
+          puts "branch '#{branch}' not found"
+        end
         return
       end
       Dir.glob(CHANGESET_DIR + '*').each do |file_path|
@@ -598,14 +619,31 @@ module Kron
     end
 
     def cat(rev_id = nil, branch = nil, paths)
-      return nil unless rev_id && branch
-
-      buffer = StringIO.new
-      mf = load_manifest(rev_id)
+      if branch
+        brch = load_rev.heads[branch]
+        if brch
+          mf = load_manifest(brch.id)
+        else
+          puts "branch '#{branch}' not found"
+          return
+        end
+      elsif rev_id
+        matched = []
+        revisions = load_rev
+        revisions.rev_map.each_key do |id|
+          matched << id unless (id =~ /#{rev_id}/).nil?
+        end
+        if matched.size == 1
+          mf = load_manifest(matched[0])
+        else
+          raise StandardError, "revision '#{rev_id}' not found"
+        end
+      end
       raise StandardError, 'unmatched revision id' unless mf
 
+      buffer = StringIO.new
       paths.each do |path|
-        buffer.puts "#{path}:\n"
+        buffer.puts "#{path}:"
         hash = mf[path]
         src = File.join(OBJECTS_DIR + [hash[0][0..1], hash[0][2..-1]].join('/')) if hash
         if hash && File.exist?(src)
@@ -615,11 +653,19 @@ module Kron
         else
           buffer.puts 'File Not Found.'
         end
+        buffer.puts ''
       end
       puts buffer.string
     end
 
     def head(branch = nil)
+      if branch
+        brch = load_rev.heads[branch]
+        unless brch
+          puts "branch '#{branch}' not found"
+          return
+        end
+      end
       rvs = load_rev
       size_limit = rvs.heads.keys.each.map { |e| rvs.heads[e].id.length }.max
       rvs.heads.keys.each do |branch_name|
@@ -627,9 +673,9 @@ module Kron
 
         print "    #{branch_name}".colorize(color: :light_cyan)
         if rvs.current[0] == branch_name
-          puts " <- HEAD #{rvs.heads[branch_name].id.rjust(size_limit)}".colorize(color: :yellow)
+          puts " #{rvs.heads[branch_name].id.rjust(size_limit)} <- HEAD".colorize(color: :yellow)
         else
-        puts " #{rvs.heads[branch_name].id.rjust(size_limit+8)}".colorize(color: :yellow)
+          puts " #{rvs.heads[branch_name].id.rjust(size_limit)}".colorize(color: :yellow)
         end
       end
     end
