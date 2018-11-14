@@ -149,6 +149,8 @@ module Kron
       c.desc 'Show latest log of a specific branch'
       c.flag %i[b branch], arg_name: '<branch>'
       c.action do |_global_options, options, _args|
+        help_now!('a branch or revision required') if options[:c].nil? && options[:b].nil?
+        help_now!('you can only give one of both branch and revision') if options[:c] && options[:b]
         log(options[:c], options[:b])
       end
     end

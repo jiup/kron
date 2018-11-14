@@ -564,8 +564,6 @@ module Kron
     end
 
     def log(revision = nil, branch = nil)
-      return nil if !branch && !revision
-
       if branch
         brch = load_rev.heads[branch]
         fetch_branch(brch)
@@ -600,7 +598,7 @@ module Kron
     end
 
     def cat(rev_id = nil, branch = nil, paths)
-      return nil unless rev_id
+      return nil unless rev_id && branch
 
       buffer = StringIO.new
       mf = load_manifest(rev_id)
@@ -623,10 +621,15 @@ module Kron
 
     def head(branch = nil)
       rvs = load_rev
+      size_limit = rvs.heads.keys.each.map { |e| rvs.heads[e].id.length }.max
       rvs.heads.keys.each do |branch_name|
-        if (branch == branch_name) || branch.nil?
-          print "    #{branch_name}".colorize(color: :light_cyan)
-          puts " <- HEAD #{rvs.heads[branch_name].id}".colorize(color: :yellow)
+        next unless (branch == branch_name) || branch.nil?
+
+        print "    #{branch_name}".colorize(color: :light_cyan)
+        if rvs.current[0] == branch_name
+          puts " <- HEAD #{rvs.heads[branch_name].id.rjust(size_limit)}".colorize(color: :yellow)
+        else
+        puts " #{rvs.heads[branch_name].id.rjust(size_limit+8)}".colorize(color: :yellow)
         end
       end
     end

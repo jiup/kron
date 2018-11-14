@@ -26,7 +26,7 @@ module Kron
         raise StandardError, 'Cannot find this attribute in changeset!' unless instance_variable_get(param)
 
         if param =~ /@*_files/
-          #value = value.split(' ')
+          # value = value.split(' ')
           instance_variable_get(param).add(value)
         else
           instance_variable_set(param, value)
@@ -47,14 +47,15 @@ module Kron
       def to_s
         buffer = StringIO.new
         instance_variables.each do |ivar|
-          unless ivar.to_s =~ /@*_files|@rev_id/
+          unless ivar.to_s =~(/@*_files|@rev_id|@timestamp/) || (instance_variable_get(ivar) == "")
             buffer << "#{ivar}: "[1..-1].capitalize
             buffer.puts instance_variable_get(ivar)
           end
         end
-        @added_files.each{|e| buffer.puts "        new file: #{e}".colorize(color: :green)}
-        @modified_files.each {|f| buffer.puts "        modified: #{f}".colorize(color: :yellow)}
-        @deleted_files.each {|f| buffer.puts "        deleted: #{f}".colorize(color: :red)}
+        buffer.puts "Time: #{Time.at(@timestamp.to_i)}"
+        @added_files.each { |e| buffer.puts "        new file: #{e}".colorize(color: :green) }
+        @modified_files.each { |f| buffer.puts "        modified: #{f}".colorize(color: :yellow) }
+        @deleted_files.each { |f| buffer.puts "        deleted: #{f}".colorize(color: :red) }
         buffer.puts ''
         buffer
       end
