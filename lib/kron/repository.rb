@@ -453,7 +453,7 @@ module Kron
 
     def list_index
       index = load_index
-      if index.each_pair.size > 0
+      if !index.each_pair.empty?
         puts 'Tracked files:'
         size_limit = index.each_pair.map { |e| e[1][1].to_s.length }.max
         path_limit = index.each_pair.map { |e| e[0].to_s.length }.max
@@ -490,7 +490,6 @@ module Kron
     def pull(repo_uri, tar_branch = 'master', force = false, verbose = false)
       # FileUtils.rm_rf File.join(WORKING_DIR, 'tmp') if File.exist? File.join(WORKING_DIR, 'tmp')
       Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
-
       if File.file? File.join(KRON_DIR, '.kron')
         FileUtils.mkdir File.join(KRON_DIR, 'tmp')
         Zip::File.open(File.join(KRON_DIR, File.basename(repo_uri)), Zip::File::CREATE) {|zip_file|
@@ -552,6 +551,42 @@ module Kron
       end
       # remove tmp 文件
       FileUtils.rm_rf File.join(KRON_DIR,'tmp')
+    end
+    def merge(branch_name,force = false )
+      revisions = load_rev
+      cur_stage = load_stage
+      cur_index = load_index
+      unless force
+        unless cur_stage.to_add.empty? && cur_stage.to_modify.empty? && cur_stage.to_delete.empty?
+          raise StandardError, 'something in stage need to commit'
+        end
+        wd = SortedSet.new
+        Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
+        tracked = Set.new
+        index.each_pair do |file_path, args|
+          tracked << file_path
+          next unless wd.include? file_path
+          if Digest::SHA1.file(file_path).hexdigest != args[0]
+            raise StandardError, "modified files unstaged, use 'kron status' to check, '-f' to overwrite"
+          end
+        end
+      end
+      cur_revision = revisions.current[1]
+      tar_revision = revisions.heads[branch_name]
+      tar_manifest = load_manifest(tar_revision.id)
+      conflict_files = []
+      tar_manifest.each_pair do |tar_file_name,tar_file_paras|
+        cur_index.each_pair do |cur_file_name,cur_file_paras|
+          if (cur_file_name == tar_file_name) && (tar_file_paras[0] != cur_file_paras[0])
+            conflict_files << tar_file_name
+          end
+        end
+      end
+      unless conflict_files.empty?
+        raise StandardError, "conflict in #{conflict_files}!!!!!!!!!!!!!!!!!"
+      end
+      
+
     end
 
     def serve(port, token, multiple_serve = false, quiet = false)
