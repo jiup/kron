@@ -7,7 +7,7 @@ module Kron
       include Kron::Accessor::ChangesetAccessor
       include Kron::Accessor::ManifestAccessor
 
-      attr_accessor :p_node, :id, :token
+      attr_accessor :p_node, :id, :token, :merge
       attr_writer :manifest, :changeset
 
       def manifest
