@@ -557,21 +557,24 @@ module Kron
       raise LoadError, 'not a kron repository (run \'kron init\' to create a new repo)' unless Dir.exist?(KRON_DIR)
     end
 
-    def fetch_branch(brch, recursive = nil)
+    def fetch_branch(brch, queue, recursive = nil)
       if brch
         rev = brch.id
       else
         return
       end
       log(rev)
-      fetch_branch(brch.p_node, recursive) if recursive && brch
+      queue.push(brch.p_node) if brch.p_node
+      # queue.push(brch.merged) if brch.merged and brch.node != brch.merged
+      first_node = queue.shift
+      fetch_branch(first_node, queue, recursive) if recursive && brch
     end
 
     def log(revision = nil, branch = nil)
       if branch
         brch = load_rev.heads[branch]
         if brch
-          fetch_branch(brch)
+          fetch_branch(brch, Array.new)
         else
           puts "branch '#{branch}' not found"
         end
@@ -602,7 +605,7 @@ module Kron
       brch = load_rev.heads[branch]
       if branch
         if brch
-          fetch_branch(brch, 1)
+          fetch_branch(brch, Array.new, 1)
         else
           puts "branch '#{branch}' not found"
         end
