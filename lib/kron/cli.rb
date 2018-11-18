@@ -268,7 +268,7 @@ module Kron
       c.desc 'Suppress the output'
       c.switch %i[q quiet], negatable: false
       c.action do |_global_options, _options, _args|
-        assert_repo_exist
+        merge(_args[0])
         exit_now! 'Command not implemented'
       end
     end

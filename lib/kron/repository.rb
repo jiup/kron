@@ -553,6 +553,21 @@ module Kron
       # remove tmp 文件
       FileUtils.rm_rf File.join(KRON_DIR,'tmp')
     end
+    def cancel_merge
+      revisions = load_index
+      if revisions.current[1].merge
+        to_cancel_revision = revisions.current[1]
+        to_cancel_revision_id = to_cancel_revision.id
+        p_revision = to_cancel_revision.p_node
+        revisions.current[1] = p_revision
+        revisions.heads[revisions.current[0]] = p_revision
+        FileUtils.rm_rf File.join(MANIFEST_DIR, to_cancel_revision_id)
+        FileUtils.rm_rf File.join(CHANGESET_DIR, to_cancel_revision_id)
+      else
+        raise StandardError, 'last commit is not merge commit '
+      end
+
+    end
 
     def merge(branch_name,author = nil,force = false)
 
