@@ -501,6 +501,24 @@ module Kron
 
     def pull(repo_uri, tar_branch, force = false, verbose = false)
       # FileUtils.rm_rf File.join(WORKING_DIR, 'tmp') if File.exist? File.join(WORKING_DIR, 'tmp')
+      stage = load_stage
+      index = load_index
+      unless force
+        unless stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
+          raise StandardError, 'something in stage need to commit'
+        end
+        wd = SortedSet.new
+        Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
+        tracked = Set.new
+        index.each_pair do |file_path, args|
+          tracked << file_path
+          next unless wd.include? file_path
+          if Digest::SHA1.file(file_path).hexdigest != args[0]
+            raise StandardError, "modified files unstaged, use 'kron status' to check, '-f' to overwrite"
+          end
+        end
+        # untracked = wd - tracked
+      end
       Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
       tmp_name = repo_uri.split('/')[-1]
       if File.file? File.join(KRON_DIR, tmp_name)
@@ -514,7 +532,7 @@ module Kron
       else
         FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR,'tmp')
       end
-      FileUtils.rm_rf File.join(BASE_DIR, tmp_name)
+      FileUtils.rm_rf File.join(KRON_DIR, tmp_name)
       tar_revisions = load_rev(File.join(KRON_DIR, 'tmp', 'rev'))
       revisions = load_rev
 
@@ -589,6 +607,9 @@ module Kron
       revisions = load_rev
       cur_stage = load_stage
       cur_index = load_index
+      if revisions.current[0].nil?
+        raise StandardError, "HEAD detached at #{revisions.current[1].id}"
+      end
       unless revisions.heads.key? branch_name
         raise StandardError, "branch #{branch_name} not found"
       end
