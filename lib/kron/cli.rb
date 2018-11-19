@@ -148,9 +148,10 @@ module Kron
       c.flag %i[c revision], arg_name: '<rev_id>'
       c.desc 'Show latest log of a specific branch'
       c.flag %i[b branch], arg_name: '<branch>'
-      c.action do |_global_options, _options, _args|
-        assert_repo_exist
-        exit_now! 'Command not implemented'
+      c.action do |_global_options, options, _args|
+        help_now!('a branch or revision required') if options[:c].nil? && options[:b].nil?
+        help_now!('you can only give one of both branch and revision') if options[:c] && options[:b]
+        log(options[:c], options[:b])
       end
     end
 
@@ -158,9 +159,8 @@ module Kron
     command :logs do |c|
       c.desc 'Show logs on a branch'
       c.flag %i[b branch], arg_name: '<branch>'
-      c.action do |_global_options, _options, _args|
-        assert_repo_exist
-        exit_now! 'Command not implemented'
+      c.action do |_global_options, options, _args|
+        logs(options[:b])
       end
     end
 
@@ -170,10 +170,11 @@ module Kron
       c.flag %i[c revision], arg_name: '<rev_id>'
       c.desc 'Show latest file revision of a branch'
       c.flag %i[b branch], arg_name: '<branch>'
-      c.action do |_global_options, _options, _args|
-        help_now!('no arguments required') unless args.empty?
-        assert_repo_exist
-        exit_now! 'Command not implemented'
+      c.action do |_global_options, options, paths|
+        exit_now!('file paths required') if paths.empty?
+        help_now!('a branch or revision required') if options[:c].nil? && options[:b].nil?
+        help_now!('you can only give one of both branch and revision') if options[:c] && options[:b]
+        cat(options[:c], options[:b], paths)
       end
     end
 
@@ -181,9 +182,8 @@ module Kron
     command [:head, :heads] do |c|
       c.desc 'Show head of a branch'
       c.flag %i[b branch], arg_name: '<branch>'
-      c.action do |_global_options, _options, _args|
-        assert_repo_exist
-        exit_now! 'Command not implemented'
+      c.action do |_global_options, options, _args|
+        head(options[:b])
       end
     end
 
