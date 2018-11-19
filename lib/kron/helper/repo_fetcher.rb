@@ -33,7 +33,7 @@ module Kron
       def self.from(uri, dir = BASE_DIR, overwrite = false)
         src = File.join(uri, '.kron')
         raise StandardError, "No repository found at '#{uri}'" unless Dir.exist?(src)
-        raise StandardError, 'Repository already exists' if !overwrite && Dir.exist?(KRON_DIR)
+        raise StandardError, 'Repository already exists' if !overwrite && (dir == BASE_DIR) && Dir.exist?(KRON_DIR)
 
         FileUtils.mkdir_p dir
         FileUtils.cp_r(src, dir)
@@ -44,7 +44,7 @@ module Kron
       def self.from(uri, overwrite = false, dir = BASE_DIR)
         basename = File.basename(uri)
         raise StandardError, 'Not a kron repository' unless File.extname(uri).eql?('.kron')
-        raise StandardError, 'Repository already exists' if !overwrite && File.exist?(basename)
+        raise StandardError, 'Repository already exists' if !overwrite && (dir == BASE_DIR) && File.exist?(basename)
 
         FileUtils.mkdir_p dir
         IO.copy_stream(open(uri), File.join(dir, basename))

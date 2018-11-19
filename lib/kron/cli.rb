@@ -280,6 +280,7 @@ module Kron
         help_now!('repo_uri is required') if repo_uri.empty?
         assert_repo_exist
         pull(repo_uri[0])
+
         exit_now! 'Command not implemented'
       end
     end
