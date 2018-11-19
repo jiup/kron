@@ -490,22 +490,22 @@ module Kron
 
     def pull(repo_uri, tar_branch, force = false, verbose = false)
       # FileUtils.rm_rf File.join(WORKING_DIR, 'tmp') if File.exist? File.join(WORKING_DIR, 'tmp')
-      Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
-      tmp_name = repo_uri.split('/')[-1]
-      if File.file? File.join(KRON_DIR, tmp_name)
-        FileUtils.mkdir File.join(KRON_DIR, 'tmp')
-        Zip::File.open(File.join(KRON_DIR, File.basename(repo_uri)), Zip::File::CREATE) do |zip_file|
-          zip_file.each do |file|
-            f_path = File.join(KRON_DIR, 'tmp', file.name)
-            zip_file.extract(file, f_path) unless File.exist?(f_path)
-          end
-        end
-      else
-        FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR,'tmp')
-      end
-      return
+      # Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
+      # tmp_name = repo_uri.split('/')[-1]
+      # if File.file? File.join(KRON_DIR, tmp_name)
+      #   FileUtils.mkdir File.join(KRON_DIR, 'tmp')
+      #   Zip::File.open(File.join(KRON_DIR, File.basename(repo_uri)), Zip::File::CREATE) do |zip_file|
+      #     zip_file.each do |file|
+      #       f_path = File.join(KRON_DIR, 'tmp', file.name)
+      #       zip_file.extract(file, f_path) unless File.exist?(f_path)
+      #     end
+      #   end
+      # else
+      #   FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR,'tmp')
+      # end
       tar_revisions = load_rev(File.join(KRON_DIR, 'tmp', 'rev'))
       revisions = load_rev
+
       cur_revision = revisions.heads[revisions.current[0]]
       tar_cur_revision = tar_revisions.heads[tar_branch]
       tmp_revision = tar_cur_revision
@@ -515,16 +515,18 @@ module Kron
           ancestor_id = tmp_revision.id
           break
         else
+          revisions.rev_map.store(tmp_revision.id, tmp_revision)
           tmp_now_revision = tmp_revision
           tmp_revision = tmp_revision.p_node
-          revisions.rev_map.store(tmp_revision.id, tmp_revision)
         end
       end
-
+      # p '=========='
+      # p ancestor_id
       raise StandardError, 'can not find common ancestor' if ancestor_id == 0
       # update revisions.heads {tar_branch:tar_cur_revision}
       revisions.heads.store(tar_branch, tar_cur_revision)
       tmp_now_revision.p_node = revisions.rev_map[ancestor_id]
+
       sync_rev revisions
       # combine manifest
       Dir.foreach(File.join(KRON_DIR, 'tmp', 'manifest')) do |file|
@@ -716,6 +718,9 @@ module Kron
     end
 
     def logs(branch = nil)
+      r = load_rev
+      p r.rev_map.keys
+      return
       buffer = {}
       brch = load_rev.heads[branch]
       if branch
