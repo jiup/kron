@@ -641,7 +641,6 @@ module Kron
         end
       end
       keep_self = {}
-      p conflict_files
       unless conflict_files.empty?
         conflict_files.each do |file|
           condition = nil
