@@ -148,7 +148,7 @@ module Kron
       sync_stage(stage)
     end
 
-    def commit(message, author = nil, branch = nil, verbose = false)
+    def commit(message, author = nil, branch = nil, verbose = false, merge = nil)
       index = load_index
       stage = load_stage
       if stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
@@ -189,6 +189,7 @@ module Kron
       # add a revision
       revision = Kron::Domain::Revision.new
       revision.p_node = revisions.current[1]
+      revision.merge = merge if merge
       sync_changeset(cs)
       sync_manifest(mf)
       manifest_hash = Digest::SHA1.file(MANIFEST_DIR + 'new_manifest.tmp').hexdigest
@@ -487,18 +488,17 @@ module Kron
       end
     end
 
-    def pull(repo_uri, tar_branch = 'jiup', force = false, verbose = false)
+    def pull(repo_uri, tar_branch, force = false, verbose = false)
       # FileUtils.rm_rf File.join(WORKING_DIR, 'tmp') if File.exist? File.join(WORKING_DIR, 'tmp')
       Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
-
       if File.file? File.join(KRON_DIR, '.kron')
         FileUtils.mkdir File.join(KRON_DIR, 'tmp')
-        Zip::File.open(File.join(KRON_DIR, File.basename(repo_uri)), Zip::File::CREATE) {|zip_file|
+        Zip::File.open(File.join(KRON_DIR, File.basename(repo_uri)), Zip::File::CREATE) do |zip_file|
           zip_file.each do |file|
             f_path = File.join(KRON_DIR, 'tmp', file.name)
             zip_file.extract(file, f_path) unless File.exist?(f_path)
           end
-        }
+        end
       else
         FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR,'tmp')
       end
@@ -552,6 +552,109 @@ module Kron
       end
       # remove tmp 文件
       FileUtils.rm_rf File.join(KRON_DIR,'tmp')
+    end
+    def cancel_merge
+      revisions = load_index
+      if revisions.current[1].merge
+        to_cancel_revision = revisions.current[1]
+        to_cancel_revision_id = to_cancel_revision.id
+        p_revision = to_cancel_revision.p_node
+        revisions.current[1] = p_revision
+        revisions.heads[revisions.current[0]] = p_revision
+        FileUtils.rm_rf File.join(MANIFEST_DIR, to_cancel_revision_id)
+        FileUtils.rm_rf File.join(CHANGESET_DIR, to_cancel_revision_id)
+      else
+        raise StandardError, 'last commit is not merge commit '
+      end
+
+    end
+
+    def merge(branch_name,author = nil,force = false)
+
+      revisions = load_rev
+      cur_stage = load_stage
+      cur_index = load_index
+      unless revisions.heads.key? branch_name
+        raise StandardError, "branch #{branch_name} not found"
+      end
+
+      unless force
+        unless cur_stage.to_add.empty? && cur_stage.to_modify.empty? && cur_stage.to_delete.empty?
+          raise StandardError, 'something in stage need to commit'
+        end
+        wd = SortedSet.new
+        Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
+        tracked = Set.new
+        cur_index.each_pair do |file_path, args|
+          tracked << file_path
+          next unless wd.include? file_path
+          if Digest::SHA1.file(file_path).hexdigest != args[0]
+            raise StandardError, "modified files unstaged, use 'kron status' to check, '-f' to overwrite"
+          end
+        end
+      end
+      cur_revision = revisions.current[1]
+      tar_revision = revisions.heads[branch_name]
+      tar_manifest = load_manifest(tar_revision.id)
+      conflict_files = []
+      tar_manifest.each_pair do |tar_file_name,tar_file_paras|
+        cur_index.each_pair do |cur_file_name,cur_file_paras|
+          if (cur_file_name == tar_file_name) && (tar_file_paras[0] != cur_file_paras[0])
+            conflict_files << tar_file_name
+          end
+        end
+      end
+      keep_self = {}
+      p conflict_files
+      unless conflict_files.empty?
+        conflict_files.each do |file|
+          condition = nil
+          loop do
+            print "Found conflict in file '#{file}', accept their's? (y/n) "
+            condition = STDIN.gets.chomp
+            break if (condition == 'y') || (condition == 'n')
+          end
+          keep_self.store(file,cur_index[file]) if condition == 'n'
+        end
+      end
+      keep_self.each_pair do |file, paras|
+        tar_manifest.put([file, paras].flatten)
+      end
+      to_modify = Set.new(conflict_files) - Set.new(keep_self.keys)
+      to_add = Set.new(tar_manifest.items.keys) - Set.new(cur_index.items.keys)
+
+      tar_manifest.each_pair do |tar_file_name, tar_file_paras|
+        cur_index.put([tar_file_name, tar_file_paras].flatten)
+      end
+
+      revision = Kron::Domain::Revision.new
+      revision.p_node = cur_revision
+      revision.merge = tar_revision
+
+      mf = Kron::Domain::Manifest.new
+      mf.rev_id = 'new_manifest.tmp'
+      cur_index.each_pair do |k, v|
+        mf.put [k, v].flatten
+      end
+      cs = Kron::Domain::Changeset.new
+      cs.rev_id = 'new_changeset.tmp'
+      to_add.each { |f| cs.put('@added_files', f) }
+      to_modify.each { |f| cs.put('@modified_files', f) }
+      cs.commit_message = "merge #{branch_name}"
+      cs.author = author
+      cs.timestamp = Time.now.to_i
+
+      sync_changeset(cs)
+      sync_manifest(mf)
+      manifest_hash = Digest::SHA1.file(MANIFEST_DIR + 'new_manifest.tmp').hexdigest
+      changeset_hash = Digest::SHA1.file(CHANGESET_DIR + 'new_changeset.tmp').hexdigest
+      rev_id = (manifest_hash.to_i(16) ^ changeset_hash.to_i(16)).to_s(16)
+      revision.id = rev_id
+      revisions.add_revision(revision)
+      File.rename(MANIFEST_DIR + 'new_manifest.tmp', MANIFEST_DIR + rev_id)
+      File.rename(CHANGESET_DIR + 'new_changeset.tmp', CHANGESET_DIR + rev_id)
+      sync_rev(revisions)
+      checkout(revisions.current[0])
     end
 
     def serve(port, token, multiple_serve = false, quiet = false)

@@ -268,7 +268,7 @@ module Kron
       c.desc 'Suppress the output'
       c.switch %i[q quiet], negatable: false
       c.action do |_global_options, _options, _args|
-        assert_repo_exist
+        merge(_args[0])
         exit_now! 'Command not implemented'
       end
     end
@@ -279,8 +279,7 @@ module Kron
       c.action do |_global_options, _options, repo_uri|
         help_now!('repo_uri is required') if repo_uri.empty?
         assert_repo_exist
-        pull(repo_uri[0])
-
+        pull(repo_uri[0], repo_uri[1])
         exit_now! 'Command not implemented'
       end
     end
