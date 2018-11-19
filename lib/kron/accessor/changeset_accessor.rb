@@ -24,7 +24,9 @@ module Kron
 
         Zlib::Inflate.inflate(File.read(src)).each_line do |line|
           params = line.chop.split(':', 2)
-          changeset.put(params[0], params[-1])
+          params[-1].split(',').each do |v|
+            changeset.put(params[0], v)
+          end
         end
         changeset
       end
@@ -36,8 +38,15 @@ module Kron
         f = File.open(src, 'w+')
         line = ''
         changeset.each_attr do |attr, value|
-          value = value.join('') if value.is_a? Array
-          line += attr.to_s + ':' + value.to_s + "\n"
+          line += attr.to_s + ':'
+          if value.is_a? Set
+            value_buffer = ''
+            value.each{|e| value_buffer += "#{e},"}
+            value = value_buffer
+          else
+            value = value.to_s
+          end
+          line += value.to_s + "\n"
         end
         f.syswrite(Zlib::Deflate.deflate(line))
         f.close

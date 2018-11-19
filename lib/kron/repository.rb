@@ -48,9 +48,8 @@ module Kron
             zip_file.extract(file, f_path) unless File.exist?(f_path)
           end
         end
-      else
-        FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR,'tmp')
       end
+      FileUtils.rm_rf File.join(BASE_DIR, tmp_name)
     end
 
     def add(file_path, force = false, recursive = true, verbose = true)
@@ -515,6 +514,7 @@ module Kron
       else
         FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR,'tmp')
       end
+      FileUtils.rm_rf File.join(BASE_DIR, tmp_name)
       tar_revisions = load_rev(File.join(KRON_DIR, 'tmp', 'rev'))
       revisions = load_rev
 
@@ -532,8 +532,6 @@ module Kron
           tmp_revision = tmp_revision.p_node
         end
       end
-      # p '=========='
-      # p ancestor_id
       raise StandardError, 'can not find common ancestor' if ancestor_id == 0
       # update revisions.heads {tar_branch:tar_cur_revision}
       revisions.heads.store(tar_branch, tar_cur_revision)
