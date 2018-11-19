@@ -664,5 +664,136 @@ module Kron
     def assert_repo_exist
       raise LoadError, 'not a kron repository (run \'kron init\' to create a new repo)' unless Dir.exist?(KRON_DIR)
     end
+
+    def fetch_branch(brch, queue, recursive = nil)
+      if brch
+        rev = brch.id
+      else
+        return
+      end
+      log(rev)
+      queue.push(brch.p_node) if brch.p_node
+      if brch.respond_to?'merge'
+        if brch.p_node != brch.merge
+          queue.push(brch.merge)
+        end
+      end
+      first_node = queue.shift
+      fetch_branch(first_node, queue, recursive) if recursive && brch
+    end
+
+    def log(revision = nil, branch = nil)
+      if branch
+        brch = load_rev.heads[branch]
+        if brch
+          fetch_branch(brch, Array.new)
+        else
+          puts "branch '#{branch}' not found"
+        end
+        return
+      elsif revision
+        matched = []
+        revisions = load_rev
+        revisions.rev_map.each_key do |id|
+          matched << id unless (id =~ /#{revision}/).nil?
+        end
+        unless matched.size == 1
+          raise StandardError, "revision '#{revision}' not found"
+        end
+      end
+      cs = Kron::Domain::Changeset.new
+      cs.rev_id = matched[0]
+      cs = load_changeset(cs)
+      if cs
+        puts "commit: #{matched[0]}".colorize(color: :yellow)
+        puts cs.to_s.string
+      else
+        puts "revision id '#{rev_id}' not found"
+      end
+    end
+
+    def logs(branch = nil)
+      buffer = {}
+      brch = load_rev.heads[branch]
+      if branch
+        if brch
+          fetch_branch(brch, Array.new, 1)
+        else
+          puts "branch '#{branch}' not found"
+        end
+        return
+      end
+      Dir.glob(CHANGESET_DIR + '*').each do |file_path|
+        revision = file_path.split('/')[-1]
+        cs = Kron::Domain::Changeset.new
+        cs.rev_id = revision
+        cs = load_changeset(cs)
+        buffer[cs.timestamp] = revision
+      end
+      buffer.keys.sort.reverse_each { |e| log(buffer[e]) }
+    end
+
+    def cat(rev_id = nil, branch = nil, paths)
+      if branch
+        brch = load_rev.heads[branch]
+        if brch
+          mf = load_manifest(brch.id)
+        else
+          puts "branch '#{branch}' not found"
+          return
+        end
+      elsif rev_id
+        matched = []
+        revisions = load_rev
+        revisions.rev_map.each_key do |id|
+          matched << id unless (id =~ /#{rev_id}/).nil?
+        end
+        if matched.size == 1
+          mf = load_manifest(matched[0])
+        else
+          raise StandardError, "revision '#{rev_id}' not found"
+        end
+      end
+      raise StandardError, 'unmatched revision id' unless mf
+
+      buffer = StringIO.new
+      paths.each do |path|
+        buffer.puts "#{path}:"
+        hash = mf[path]
+        src = File.join(OBJECTS_DIR + [hash[0][0..1], hash[0][2..-1]].join('/')) if hash
+        if hash && File.exist?(src)
+          File.read(src).each_line do |row|
+            buffer.puts row
+          end
+        else
+          buffer.puts 'File Not Found.'
+        end
+        buffer.puts ''
+      end
+      puts buffer.string
+    end
+
+    def head(branch = nil)
+      if branch
+        brch = load_rev.heads[branch]
+        unless brch
+          puts "branch '#{branch}' not found"
+          return
+        end
+      end
+      rvs = load_rev
+      size_limit = rvs.heads.keys.each.map { |e| rvs.heads[e].id.length }.max
+      rvs.heads.keys.each do |branch_name|
+        next unless (branch == branch_name) || branch.nil?
+
+        print "    #{branch_name}".colorize(color: :light_cyan)
+        if rvs.current[0] == branch_name
+          puts " #{rvs.heads[branch_name].id.rjust(size_limit)} <- HEAD".colorize(color: :yellow)
+        else
+          puts " #{rvs.heads[branch_name].id.rjust(size_limit)}".colorize(color: :yellow)
+        end
+      end
+    end
+
   end
 end
