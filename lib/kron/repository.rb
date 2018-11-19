@@ -406,7 +406,7 @@ module Kron
       if File.exist? IGNORE_PATH
         File.open(IGNORE_PATH).each do |regex|
           untracked.delete_if do |path|
-            !regex.start_with?('#') && path.match?(regex)
+            !regex.start_with?('#') && path.match?(regex.chomp)
           end
         end
       end
@@ -582,7 +582,6 @@ module Kron
           FileUtils.cp_r KRON_DIR + 'tmp/objects/' + subdir + '/', OBJECTS_DIR + subdir
         end
       end
-      # remove tmp 文件
       FileUtils.rm_rf File.join(KRON_DIR,'tmp')
     end
 
