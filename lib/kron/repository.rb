@@ -565,7 +565,7 @@ module Kron
       end
       log(rev)
       queue.push(brch.p_node) if brch.p_node
-      # queue.push(brch.merged) if brch.merged and brch.node != brch.merged
+      queue.push(brch.merge) if brch.merge && brch.node != brch.merge
       first_node = queue.shift
       fetch_branch(first_node, queue, recursive) if recursive && brch
     end
