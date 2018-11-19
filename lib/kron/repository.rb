@@ -35,8 +35,21 @@ module Kron
     end
 
     def clone(repo_uri, force = false, verbose = false)
-      if Kron::Helper::RepoFetcher.from(repo_uri, BASE_DIR, force, verbose)
-        # TODO: recovery the working directory from HEAD revision
+      # if Kron::Helper::RepoFetcher.from(repo_uri, BASE_DIR, force, verbose)
+      #   # TODO: recovery the working directory from HEAD revision
+      # end
+      Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
+      tmp_name = repo_uri.split('/')[-1]
+      if File.file? File.join(KRON_DIR, tmp_name)
+        FileUtils.mkdir File.join(KRON_DIR, '.kron')
+        Zip::File.open(File.join(KRON_DIR, File.basename(repo_uri)), Zip::File::CREATE) do |zip_file|
+          zip_file.each do |file|
+            f_path = File.join(KRON_DIR, '.kron', file.name)
+            zip_file.extract(file, f_path) unless File.exist?(f_path)
+          end
+        end
+      else
+        FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR,'tmp')
       end
     end
 
@@ -290,7 +303,6 @@ module Kron
             raise StandardError, "modified files unstaged, use 'kron status' to check, '-f' to overwrite"
           end
         end
-
         untracked = wd - tracked
       end
 
@@ -490,19 +502,19 @@ module Kron
 
     def pull(repo_uri, tar_branch, force = false, verbose = false)
       # FileUtils.rm_rf File.join(WORKING_DIR, 'tmp') if File.exist? File.join(WORKING_DIR, 'tmp')
-      # Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
-      # tmp_name = repo_uri.split('/')[-1]
-      # if File.file? File.join(KRON_DIR, tmp_name)
-      #   FileUtils.mkdir File.join(KRON_DIR, 'tmp')
-      #   Zip::File.open(File.join(KRON_DIR, File.basename(repo_uri)), Zip::File::CREATE) do |zip_file|
-      #     zip_file.each do |file|
-      #       f_path = File.join(KRON_DIR, 'tmp', file.name)
-      #       zip_file.extract(file, f_path) unless File.exist?(f_path)
-      #     end
-      #   end
-      # else
-      #   FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR,'tmp')
-      # end
+      Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
+      tmp_name = repo_uri.split('/')[-1]
+      if File.file? File.join(KRON_DIR, tmp_name)
+        FileUtils.mkdir File.join(KRON_DIR, 'tmp')
+        Zip::File.open(File.join(KRON_DIR, File.basename(repo_uri)), Zip::File::CREATE) do |zip_file|
+          zip_file.each do |file|
+            f_path = File.join(KRON_DIR, 'tmp', file.name)
+            zip_file.extract(file, f_path) unless File.exist?(f_path)
+          end
+        end
+      else
+        FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR,'tmp')
+      end
       tar_revisions = load_rev(File.join(KRON_DIR, 'tmp', 'rev'))
       revisions = load_rev
 
