@@ -491,7 +491,8 @@ module Kron
     def pull(repo_uri, tar_branch, force = false, verbose = false)
       # FileUtils.rm_rf File.join(WORKING_DIR, 'tmp') if File.exist? File.join(WORKING_DIR, 'tmp')
       Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
-      if File.file? File.join(KRON_DIR, '.kron')
+      tmp_name = repo_uri.split('/')[-1]
+      if File.file? File.join(KRON_DIR, tmp_name)
         FileUtils.mkdir File.join(KRON_DIR, 'tmp')
         Zip::File.open(File.join(KRON_DIR, File.basename(repo_uri)), Zip::File::CREATE) do |zip_file|
           zip_file.each do |file|
@@ -502,6 +503,7 @@ module Kron
       else
         FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR,'tmp')
       end
+      return
       tar_revisions = load_rev(File.join(KRON_DIR, 'tmp', 'rev'))
       revisions = load_rev
       cur_revision = revisions.heads[revisions.current[0]]
@@ -553,6 +555,7 @@ module Kron
       # remove tmp 文件
       FileUtils.rm_rf File.join(KRON_DIR,'tmp')
     end
+
     def cancel_merge
       revisions = load_index
       if revisions.current[1].merge

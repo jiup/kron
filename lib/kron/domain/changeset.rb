@@ -1,3 +1,4 @@
+require 'colorize'
 module Kron
   module Domain
     class Changeset
@@ -7,9 +8,12 @@ module Kron
 
       def initialize(rev_id = nil)
         @rev_id = rev_id
-        @commit_message = @author = ''
+        @author = ''
+        @commit_message = ''
         @timestamp = Time.now.asctime
-        @added_files = @modified_files = @deleted_files = []
+        @added_files = Set.new
+        @modified_files = Set.new
+        @deleted_files = Set.new
       end
 
       def rev_id=(rev_id)
@@ -21,8 +25,12 @@ module Kron
       def put(param, value)
         raise StandardError, 'Cannot find this attribute in changeset!' unless instance_variable_get(param)
 
-        value = value.split(' ') if param =~ /@*_files/
-        instance_variable_set(param, value)
+        if param =~ /@*_files/
+          # value = value.split(' ')
+          instance_variable_get(param).add(value)
+        else
+          instance_variable_set(param, value)
+        end
       end
 
       def each_attr
@@ -37,25 +45,27 @@ module Kron
       end
 
       def to_s
-        message = ''
+        buffer = StringIO.new
         instance_variables.each do |ivar|
-          lines = "#{ivar}:"
-          if ivar.to_s =~ /@*_files/
-            instance_variable_get(ivar).each do |val|
-              lines += val
-            end
-          elsif ivar.to_s != '@rev_id'
-            lines += instance_variable_get(ivar)
+          unless ivar.to_s =~(/@*_files|@rev_id|@timestamp/) || (instance_variable_get(ivar) == "")
+            buffer << "#{ivar}: "[1..-1].capitalize
+            buffer.puts instance_variable_get(ivar)
           end
-          message += lines + "\n"
         end
-        message
+        buffer.puts "Time: #{Time.at(@timestamp.to_i)}"
+        @added_files.each { |e| buffer.puts "        new file: #{e}".colorize(color: :green) }
+        @modified_files.each { |f| buffer.puts "        modified: #{f}".colorize(color: :yellow) }
+        @deleted_files.each { |f| buffer.puts "        deleted: #{f}".colorize(color: :red) }
+        buffer.puts ''
+        buffer
       end
     end
   end
 end
 
 # a = Kron::Domain::Changeset.new(1)
-# a.put("@commit_message", "time runs out")
-# # a.each_attr{|a,v| p a,v}
-# print a.to_s
+# a.put("@added_files", "time runs out")
+# a.put("@added_files", "time runs out2")
+# puts a.added_files.to_s
+# a.each_attr{|a,v| p a,v}
+# # print a.to_s
