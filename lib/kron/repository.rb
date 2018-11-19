@@ -35,9 +35,21 @@ module Kron
     end
 
     def clone(repo_uri, force = false, verbose = false)
-      if Kron::Helper::RepoFetcher.from(repo_uri, BASE_DIR, force, verbose)
-        # TODO: recovery the working directory from HEAD revision
+      # if Kron::Helper::RepoFetcher.from(repo_uri, BASE_DIR, force, verbose)
+      #   # TODO: recovery the working directory from HEAD revision
+      # end
+      Kron::Helper::RepoFetcher.from(repo_uri, BASE_DIR, force, verbose)
+      tmp_name = repo_uri.split('/')[-1]
+      if File.file? File.join(BASE_DIR, tmp_name)
+        FileUtils.mkdir File.join(BASE_DIR, '.kron')
+        Zip::File.open(File.join(BASE_DIR, File.basename(repo_uri)), Zip::File::CREATE) do |zip_file|
+          zip_file.each do |file|
+            f_path = File.join(BASE_DIR, '.kron', file.name)
+            zip_file.extract(file, f_path) unless File.exist?(f_path)
+          end
+        end
       end
+      FileUtils.rm_rf File.join(BASE_DIR, tmp_name)
     end
 
     def add(file_path, force = false, recursive = true, verbose = true)
@@ -290,7 +302,6 @@ module Kron
             raise StandardError, "modified files unstaged, use 'kron status' to check, '-f' to overwrite"
           end
         end
-
         untracked = wd - tracked
       end
 
@@ -395,7 +406,7 @@ module Kron
       if File.exist? IGNORE_PATH
         File.open(IGNORE_PATH).each do |regex|
           untracked.delete_if do |path|
-            !regex.start_with?('#') && path.match?(regex)
+            !regex.start_with?('#') && path.match?(regex.chomp)
           end
         end
       end
@@ -490,8 +501,27 @@ module Kron
 
     def pull(repo_uri, tar_branch, force = false, verbose = false)
       # FileUtils.rm_rf File.join(WORKING_DIR, 'tmp') if File.exist? File.join(WORKING_DIR, 'tmp')
+      stage = load_stage
+      index = load_index
+      unless force
+        unless stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
+          raise StandardError, 'something in stage need to commit'
+        end
+        wd = SortedSet.new
+        Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
+        tracked = Set.new
+        index.each_pair do |file_path, args|
+          tracked << file_path
+          next unless wd.include? file_path
+          if Digest::SHA1.file(file_path).hexdigest != args[0]
+            raise StandardError, "modified files unstaged, use 'kron status' to check, '-f' to overwrite"
+          end
+        end
+        # untracked = wd - tracked
+      end
       Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
-      if File.file? File.join(KRON_DIR, '.kron')
+      tmp_name = repo_uri.split('/')[-1]
+      if File.file? File.join(KRON_DIR, tmp_name)
         FileUtils.mkdir File.join(KRON_DIR, 'tmp')
         Zip::File.open(File.join(KRON_DIR, File.basename(repo_uri)), Zip::File::CREATE) do |zip_file|
           zip_file.each do |file|
@@ -502,8 +532,10 @@ module Kron
       else
         FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR,'tmp')
       end
+      FileUtils.rm_rf File.join(KRON_DIR, tmp_name)
       tar_revisions = load_rev(File.join(KRON_DIR, 'tmp', 'rev'))
       revisions = load_rev
+
       cur_revision = revisions.heads[revisions.current[0]]
       tar_cur_revision = tar_revisions.heads[tar_branch]
       tmp_revision = tar_cur_revision
@@ -513,16 +545,16 @@ module Kron
           ancestor_id = tmp_revision.id
           break
         else
+          revisions.rev_map.store(tmp_revision.id, tmp_revision)
           tmp_now_revision = tmp_revision
           tmp_revision = tmp_revision.p_node
-          revisions.rev_map.store(tmp_revision.id, tmp_revision)
         end
       end
-
       raise StandardError, 'can not find common ancestor' if ancestor_id == 0
       # update revisions.heads {tar_branch:tar_cur_revision}
       revisions.heads.store(tar_branch, tar_cur_revision)
       tmp_now_revision.p_node = revisions.rev_map[ancestor_id]
+
       sync_rev revisions
       # combine manifest
       Dir.foreach(File.join(KRON_DIR, 'tmp', 'manifest')) do |file|
@@ -550,9 +582,9 @@ module Kron
           FileUtils.cp_r KRON_DIR + 'tmp/objects/' + subdir + '/', OBJECTS_DIR + subdir
         end
       end
-      # remove tmp 文件
       FileUtils.rm_rf File.join(KRON_DIR,'tmp')
     end
+
     def cancel_merge
       revisions = load_index
       if revisions.current[1].merge
@@ -574,6 +606,9 @@ module Kron
       revisions = load_rev
       cur_stage = load_stage
       cur_index = load_index
+      if revisions.current[0].nil?
+        raise StandardError, "HEAD detached at #{revisions.current[1].id}"
+      end
       unless revisions.heads.key? branch_name
         raise StandardError, "branch #{branch_name} not found"
       end
@@ -713,6 +748,9 @@ module Kron
     end
 
     def logs(branch = nil)
+      r = load_rev
+      p r.rev_map.keys
+      return
       buffer = {}
       brch = load_rev.heads[branch]
       if branch

@@ -41,7 +41,7 @@ module Kron
     end
 
     class RemoteFetcher < RepoFetcher
-      def self.from(uri, overwrite = false, dir = BASE_DIR)
+      def self.from(uri, dir = BASE_DIR, overwrite = false)
         basename = File.basename(uri)
         raise StandardError, 'Not a kron repository' unless File.extname(uri).eql?('.kron')
         raise StandardError, 'Repository already exists' if !overwrite && (dir == BASE_DIR) && File.exist?(basename)
