@@ -158,7 +158,7 @@ module Kron
       # load Revisions
       revisions = load_rev
       if revisions.current[0].nil?
-        raise StandardError, "HEAD detached at #{revisions.current[1]}"
+        raise StandardError, "HEAD detached at #{revisions.current[1].id}"
       end
 
       hashes = Set.new index.each_pair.collect { |kv| kv[1][0] }
@@ -487,15 +487,22 @@ module Kron
       end
     end
 
-    def pull(name, tar_branch = 'zhang')
-      FileUtils.mkdir File.join(WORKING_DIR, '.tmp')
-      Zip::File.open(name, Zip::File::CREATE) do |zip_file|
-        zip_file.each do |file|
-          f_path = File.join(WORKING_DIR, '.tmp', file.name)
-          zip_file.extract(file, f_path) unless File.exist?(f_path)
-        end
+    def pull(repo_uri, tar_branch = 'jiup', force = false, verbose = false)
+      # FileUtils.rm_rf File.join(WORKING_DIR, 'tmp') if File.exist? File.join(WORKING_DIR, 'tmp')
+      Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
+
+      if File.file? File.join(KRON_DIR, '.kron')
+        FileUtils.mkdir File.join(KRON_DIR, 'tmp')
+        Zip::File.open(File.join(KRON_DIR, File.basename(repo_uri)), Zip::File::CREATE) {|zip_file|
+          zip_file.each do |file|
+            f_path = File.join(KRON_DIR, 'tmp', file.name)
+            zip_file.extract(file, f_path) unless File.exist?(f_path)
+          end
+        }
+      else
+        FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR,'tmp')
       end
-      tar_revisions = load_rev(File.join(BASE_DIR, 'tmp', 'rev'))
+      tar_revisions = load_rev(File.join(KRON_DIR, 'tmp', 'rev'))
       revisions = load_rev
       cur_revision = revisions.heads[revisions.current[0]]
       tar_cur_revision = tar_revisions.heads[tar_branch]
@@ -516,37 +523,35 @@ module Kron
       # update revisions.heads {tar_branch:tar_cur_revision}
       revisions.heads.store(tar_branch, tar_cur_revision)
       tmp_now_revision.p_node = revisions.rev_map[ancestor_id]
-      # sync_rev revisions
-
+      sync_rev revisions
       # combine manifest
-      Dir.foreach(File.join(WORKING_DIR, 'tmp', 'manifest')) do |file|
+      Dir.foreach(File.join(KRON_DIR, 'tmp', 'manifest')) do |file|
         unless File.exist?(File.join(MANIFEST_DIR, file))
-          FileUtils.cp File.join(WORKING_DIR, 'tmp', 'manifest', file), File.join(MANIFEST_DIR, file)
+          FileUtils.cp File.join(KRON_DIR, 'tmp', 'manifest', file), File.join(MANIFEST_DIR, file)
         end
       end
       # combine changeset
-      Dir.foreach(File.join(WORKING_DIR, 'tmp', 'changeset')) do |file|
+      Dir.foreach(File.join(KRON_DIR, 'tmp', 'changeset')) do |file|
         unless File.exist?(File.join(CHANGESET_DIR, file))
-          FileUtils.cp File.join(WORKING_DIR, 'tmp', 'changeset', file), File.join(CHANGESET_DIR, file)
+          FileUtils.cp File.join(KRON_DIR, 'tmp', 'changeset', file), File.join(CHANGESET_DIR, file)
         end
       end
-      # combine objects
-      Dir.foreach(File.join(WORKING_DIR, 'tmp', 'objects')) do |subdir|
+      #combine objects
+      Dir.foreach(File.join(KRON_DIR, 'tmp', 'objects')) do |subdir|
         if File.exist?(File.join(OBJECTS_DIR, subdir))
           if subdir != '.' && subdir != '..'
-            Dir.foreach(File.join(WORKING_DIR, 'tmp', 'objects', subdir)) do |file|
+            Dir.foreach(File.join(KRON_DIR, 'tmp', 'objects', subdir)) do |file|
               unless File.exist?(File.join(OBJECTS_DIR, subdir, file))
-                FileUtils.cp File.join(WORKING_DIR, 'tmp', 'objects', subdir, file), File.join(OBJECTS_DIR, subdir, file)
+                FileUtils.cp File.join(KRON_DIR, 'tmp', 'objects', subdir, file), File.join(OBJECTS_DIR, subdir, file)
               end
             end
           end
         else
-          FileUtils.cp_r WORKING_DIR + 'tmp/objects/' + subdir + '/', OBJECTS_DIR + subdir
+          FileUtils.cp_r KRON_DIR + 'tmp/objects/' + subdir + '/', OBJECTS_DIR + subdir
         end
-        # unless File.exist?(File.join(CHANGESET_DIR, file))
-        #   FileUtils.cp File.join(WORKING_DIR, 'tmp', 'changeset', file), File.join(CHANGESET_DIR, file)
-        # end
       end
+      # remove tmp 文件
+      FileUtils.rm_rf File.join(KRON_DIR,'tmp')
     end
 
     def serve(port, token, multiple_serve = false, quiet = false)
