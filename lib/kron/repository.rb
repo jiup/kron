@@ -3,6 +3,7 @@ require 'digest'
 require 'pathname'
 require 'colorize'
 require 'kron/constant'
+require 'kron/helper/configurator'
 require 'kron/helper/repo_fetcher'
 require 'kron/helper/repo_server'
 require 'kron/accessor/index_accessor'
@@ -24,7 +25,7 @@ module Kron
     include Kron::Accessor::ManifestAccessor
     include Kron::Accessor::ChangesetAccessor
 
-    def init(force = false, verbose = false)
+    def init(force = false, bare = false, verbose = false)
       raise StandardError, 'Repository already exists, use \'kron init -f\' to overwrite' if !force && Dir.exist?(KRON_DIR)
 
       FileUtils.rm_rf(KRON_DIR)
@@ -32,7 +33,37 @@ module Kron
       init_index
       init_changeset_dir
       init_manifest_dir
+      File.write(IGNORE_PATH, '.kronignore') unless bare
+      # load configurations
+      # conf = Kron::Helper::Configurator.instance
       puts 'Kron repository initialized.' if verbose
+    end
+
+    def list_config
+      puts Kron::Helper::Configurator.instance
+    end
+
+    def set_config(name, author, verbose = false)
+      conf = Kron::Helper::Configurator.instance
+      conf['repository'] = name unless name.nil?
+      conf['author'] = author unless author.nil?
+      conf.sync verbose
+    end
+
+    def unset_config(keys, verbose = false)
+      conf = Kron::Helper::Configurator.instance
+      modified = false
+      keys.each do |key|
+        key = key.downcase
+        if conf.has? key
+          conf.delete key
+          modified = true
+          puts "Key '#{key}' removed." if verbose
+        else
+          puts "Key '#{key}' not found."
+        end
+      end
+      conf.sync if modified
     end
 
     def clone(repo_uri, force = false, verbose = false)
@@ -183,7 +214,7 @@ module Kron
         FileUtils.mkdir_p(File.dirname(dst_path))
         FileUtils.mv file_hash, dst_path, force: true
       end
-      # add Manifest TODO: why didn't directly copy it in disk?
+      # add Manifest
       mf = Kron::Domain::Manifest.new
       mf.rev_id = 'new_manifest.tmp'
       index.each_pair do |k, v|
@@ -492,7 +523,6 @@ module Kron
     end
 
     def pull(repo_uri, tar_branch, force = false, verbose = false)
-      # FileUtils.rm_rf File.join(WORKING_DIR, 'tmp') if File.exist? File.join(WORKING_DIR, 'tmp')
       stage = load_stage
       index = load_index
       unless force
@@ -522,7 +552,7 @@ module Kron
           end
         end
       else
-        FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR,'tmp')
+        FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR, 'tmp')
       end
       FileUtils.rm_rf File.join(KRON_DIR, tmp_name)
       tar_revisions = load_rev(File.join(KRON_DIR, 'tmp', 'rev'))
@@ -531,7 +561,7 @@ module Kron
         tar_revisions.rev_map.each_key do |key|
           next unless revisions.rev_map.key? key
           unless force
-            raise StandardError, "can not pull #{tar_branch}. revision comfliction"
+            raise StandardError, "revision conflict, can not pull '#{tar_branch}'."
           end
         end
       end
@@ -552,6 +582,7 @@ module Kron
         raise StandardError, "#{tar_branch} already up to date"
       end
       raise StandardError, 'can not find common ancestor' if ancestor_id == 0
+
       # update revisions.heads {tar_branch:tar_cur_revision}
       revisions.heads.store(tar_branch, tar_cur_revision)
       tmp_now_revision.p_node = revisions.rev_map[ancestor_id]
@@ -569,7 +600,7 @@ module Kron
           FileUtils.cp File.join(KRON_DIR, 'tmp', 'changeset', file), File.join(CHANGESET_DIR, file)
         end
       end
-      #combine objects
+      # combine objects
       Dir.foreach(File.join(KRON_DIR, 'tmp', 'objects')) do |subdir|
         if File.exist?(File.join(OBJECTS_DIR, subdir))
           if subdir != '.' && subdir != '..'
@@ -583,7 +614,7 @@ module Kron
           FileUtils.cp_r KRON_DIR + 'tmp/objects/' + subdir + '/', OBJECTS_DIR + subdir
         end
       end
-      FileUtils.rm_rf File.join(KRON_DIR,'tmp')
+      FileUtils.rm_rf File.join(KRON_DIR, 'tmp')
     end
 
     def cancel_merge
@@ -597,11 +628,11 @@ module Kron
         FileUtils.rm_rf File.join(MANIFEST_DIR, to_cancel_revision_id)
         FileUtils.rm_rf File.join(CHANGESET_DIR, to_cancel_revision_id)
       else
-        raise StandardError, 'last commit is not merge commit '
+        raise StandardError, 'cannot revert a non-merge commit'
       end
     end
 
-    def merge(branch_name,author = nil,force = false)
+    def merge(branch_name, author = nil, force = false)
       revisions = load_rev
       cur_stage = load_stage
       cur_index = load_index
@@ -616,6 +647,7 @@ module Kron
         unless cur_stage.to_add.empty? && cur_stage.to_modify.empty? && cur_stage.to_delete.empty?
           raise StandardError, 'something in stage need to commit'
         end
+
         wd = SortedSet.new
         Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
         tracked = Set.new
@@ -631,8 +663,8 @@ module Kron
       tar_revision = revisions.heads[branch_name]
       tar_manifest = load_manifest(tar_revision.id)
       conflict_files = []
-      tar_manifest.each_pair do |tar_file_name,tar_file_paras|
-        cur_index.each_pair do |cur_file_name,cur_file_paras|
+      tar_manifest.each_pair do |tar_file_name, tar_file_paras|
+        cur_index.each_pair do |cur_file_name, cur_file_paras|
           if (cur_file_name == tar_file_name) && (tar_file_paras[0] != cur_file_paras[0])
             conflict_files << tar_file_name
           end
@@ -647,7 +679,7 @@ module Kron
             condition = STDIN.gets.chomp
             break if (condition == 'y') || (condition == 'n')
           end
-          keep_self.store(file,cur_index[file]) if condition == 'n'
+          keep_self.store(file, cur_index[file]) if condition == 'n'
         end
       end
       keep_self.each_pair do |file, paras|
@@ -752,8 +784,10 @@ module Kron
     end
 
     def cat(rev_id = nil, branch = nil, paths)
+      rev = load_rev
+      branch = rev.current[0] if branch.nil? && rev_id.nil?
       if branch
-        brch = load_rev.heads[branch]
+        brch = rev.heads[branch]
         if brch
           mf = load_manifest(brch.id)
         else
@@ -762,7 +796,7 @@ module Kron
         end
       elsif rev_id
         matched = []
-        revisions = load_rev
+        revisions = rev
         revisions.rev_map.each_key do |id|
           matched << id unless (id =~ /#{rev_id}/).nil?
         end
@@ -777,17 +811,17 @@ module Kron
       buffer = StringIO.new
       paths.each do |path|
         len = path.length
-        buffer.print path.to_s.colorize(color: :light_cyan, mode: :bold)
-        buffer.puts ' >>>>>'.colorize(color: :cyan, mode: :bold)
         hash = mf[path]
         src = File.join(OBJECTS_DIR + [hash[0][0..1], hash[0][2..-1]].join('/')) if hash
         if hash && File.exist?(src)
+          buffer.print path.to_s.colorize(color: :light_cyan, mode: :bold)
+          buffer.puts ' >>>>>'.colorize(color: :blue, mode: :bold)
           File.read(src).each_line do |row|
             buffer.puts row
           end
-          buffer.puts('<' * (6 + len)).colorize(color: :cyan, mode: :bold)
+          buffer.puts(('<' * (6 + len)).colorize(color: :blue, mode: :bold))
         else
-          buffer.puts 'File Not Found.'
+          buffer.puts "File '#{path}' not found.".colorize(color: :red)
         end
         buffer.puts
       end
@@ -795,14 +829,14 @@ module Kron
     end
 
     def heads(branch = nil)
+      rvs = load_rev
       if branch
-        brch = load_rev.heads[branch]
+        brch = rvs.heads[branch]
         unless brch
           puts "branch '#{branch}' not found"
           return
         end
       end
-      rvs = load_rev
       size_limit = rvs.heads.keys.each.map { |e| e.length }.max
       rvs.heads.keys.each do |branch_name|
         next unless (branch == branch_name) || branch.nil?
