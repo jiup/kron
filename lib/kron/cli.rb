@@ -151,6 +151,7 @@ module Kron
       c.action do |_global_options, options, _args|
         help_now!('a branch or revision required') if options[:c].nil? && options[:b].nil?
         help_now!('you can only give one of both branch and revision') if options[:c] && options[:b]
+        assert_repo_exist
         log(options[:c], options[:b])
       end
     end
@@ -160,6 +161,7 @@ module Kron
       c.desc 'Show logs on a branch'
       c.flag %i[b branch], arg_name: '<branch>'
       c.action do |_global_options, options, _args|
+        assert_repo_exist
         logs(options[:b])
       end
     end
@@ -174,6 +176,7 @@ module Kron
         exit_now!('file paths required') if paths.empty?
         help_now!('a branch or revision required') if options[:c].nil? && options[:b].nil?
         help_now!('you can only give one of both branch and revision') if options[:c] && options[:b]
+        assert_repo_exist
         cat(options[:c], options[:b], paths)
       end
     end
@@ -183,6 +186,7 @@ module Kron
       c.desc 'Show head of a branch'
       c.flag %i[b branch], arg_name: '<branch>'
       c.action do |_global_options, options, _args|
+        assert_repo_exist
         head(options[:b])
       end
     end
