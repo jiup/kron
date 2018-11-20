@@ -263,7 +263,17 @@ module Kron
     #
     #   revisions.heads.delete(b_name)
     # end
-
+    def recover_wd(mf)
+      new_index = Kron::Domain::Index.new
+      mf.each_pair do |file_name, paras|
+        dir = paras[0][0..1]
+        file_hash = paras[0][2..-1]
+        FileUtils.mkdir_p File.dirname(file_name)
+        FileUtils.cp File.join(OBJECTS_DIR, dir, file_hash), File.join(WORKING_DIR, file_name)
+        new_index.put [file_name, paras].flatten
+      end
+      sync_index(new_index)
+    end
     def rename_branch(old_name, new_name)
       revisions = load_rev
       raise StandardError, "branch '#{b_name}' not found" unless revisions.heads[old_name]
@@ -341,7 +351,7 @@ module Kron
         end
       end
 
-      new_index = Kron::Domain::Index.new
+
       now_files = Set.new index.each_pair.collect { |kv| kv[0] }
       target_files = Set.new mf.each_pair.collect { |kv| kv[0] }
       to_rm_files = now_files - target_files
@@ -349,6 +359,7 @@ module Kron
         FileUtils.rm_f File.join(WORKING_DIR, file)
       end
       # based on mf recover working directory and index.
+      new_index = Kron::Domain::Index.new
       mf.each_pair do |file_name, paras|
         dir = paras[0][0..1]
         file_hash = paras[0][2..-1]
@@ -356,8 +367,9 @@ module Kron
         FileUtils.cp File.join(OBJECTS_DIR, dir, file_hash), File.join(WORKING_DIR, file_name)
         new_index.put [file_name, paras].flatten
       end
-      revisions.current = [new_branch, revisions.rev_map[revision_id]]
       sync_index(new_index)
+
+      revisions.current = [new_branch, revisions.rev_map[revision_id]]
       sync_rev(revisions)
       if verbose
         if is_branch
@@ -498,7 +510,6 @@ module Kron
         unless stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
           raise StandardError, 'something in stage need to commit'
         end
-
         wd = SortedSet.new
         Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
         tracked = Set.new
@@ -584,7 +595,6 @@ module Kron
         FileUtils.rm_rf File.join(KRON_DIR, 'tmp')
         FileUtils.rm_rf File.join(KRON_DIR, tmp_name)
       end
-
     end
 
     def cancel_merge
@@ -684,7 +694,8 @@ module Kron
       File.rename(MANIFEST_DIR + 'new_manifest.tmp', MANIFEST_DIR + rev_id)
       File.rename(CHANGESET_DIR + 'new_changeset.tmp', CHANGESET_DIR + rev_id)
       sync_rev(revisions)
-      checkout(revisions.current[0])
+      # checkout(revisions.current[0])
+      recover_wd(mf)
     end
 
     def serve(port, token, multiple_serve = false, quiet = false)
