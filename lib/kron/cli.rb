@@ -166,6 +166,14 @@ module Kron
       end
     end
 
+    desc 'Show differences between revisions'
+    command [:diff, :compare] do |c|
+      c.action do |_global_options, _options, args|
+        assert_repo_exist
+        # TODO: invoke 'kron diff <args[0]> [<args[1]>]'
+      end
+    end
+
     desc 'Print text of a file of a specific revision'
     command [:cat, :lookup] do |c|
       c.desc 'Show file content of a specific revision'
@@ -174,7 +182,6 @@ module Kron
       c.flag %i[b branch], arg_name: '<branch>'
       c.action do |_global_options, options, paths|
         exit_now!('file paths required') if paths.empty?
-        help_now!('a branch or revision required') if options[:c].nil? && options[:b].nil?
         help_now!('you can only give one of both branch and revision') if options[:c] && options[:b]
         assert_repo_exist
         cat(options[:c], options[:b], paths)
@@ -187,7 +194,7 @@ module Kron
       c.flag %i[b branch], arg_name: '<branch>'
       c.action do |_global_options, options, _args|
         assert_repo_exist
-        head(options[:b])
+        heads(options[:b])
       end
     end
 

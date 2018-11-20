@@ -752,8 +752,12 @@ module Kron
     end
 
     def cat(rev_id = nil, branch = nil, paths)
+      rev = load_rev
+      if branch.nil? && rev_id.nil?
+        branch = rev.current[0]
+      end
       if branch
-        brch = load_rev.heads[branch]
+        brch = rev.heads[branch]
         if brch
           mf = load_manifest(brch.id)
         else
@@ -762,7 +766,7 @@ module Kron
         end
       elsif rev_id
         matched = []
-        revisions = load_rev
+        revisions = rev
         revisions.rev_map.each_key do |id|
           matched << id unless (id =~ /#{rev_id}/).nil?
         end
@@ -787,7 +791,7 @@ module Kron
           end
           buffer.puts(('<' * (6 + len)).colorize(color: :blue, mode: :bold))
         else
-          buffer.puts 'File Not Found.'
+          buffer.puts "File '#{path}' not found.".colorize(color: :red)
         end
         buffer.puts
       end
@@ -795,14 +799,14 @@ module Kron
     end
 
     def heads(branch = nil)
+      rvs = load_rev
       if branch
-        brch = load_rev.heads[branch]
+        brch = rvs.heads[branch]
         unless brch
           puts "branch '#{branch}' not found"
           return
         end
       end
-      rvs = load_rev
       size_limit = rvs.heads.keys.each.map { |e| e.length }.max
       rvs.heads.keys.each do |branch_name|
         next unless (branch == branch_name) || branch.nil?
