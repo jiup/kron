@@ -97,6 +97,7 @@ module Kron
         entries = Dir.entries(@input_dir)
         entries.delete('.')
         entries.delete('..')
+        # TODO: delete config file
         io = Zip::File.open(@output_file, Zip::File::CREATE)
         write_entries(entries, '', io)
         io.close

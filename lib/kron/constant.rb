@@ -9,6 +9,7 @@ module Kron
   STAGE_DIR = "#{OBJECTS_DIR}stage/".freeze
 
   # FILE_PATHS
+  CONFIG_PATH = "#{KRON_DIR}config".freeze
   INDEX_PATH = "#{KRON_DIR}index".freeze
   STAGE_PATH = "#{KRON_DIR}stage".freeze
   REV_PATH = "#{KRON_DIR}rev".freeze

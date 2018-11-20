@@ -1,8 +1,10 @@
 require 'set'
+require 'zip'
 require 'digest'
 require 'pathname'
 require 'colorize'
 require 'kron/constant'
+require 'kron/helper/configurator'
 require 'kron/helper/repo_fetcher'
 require 'kron/helper/repo_server'
 require 'kron/accessor/index_accessor'
@@ -13,7 +15,6 @@ require 'kron/accessor/changeset_accessor'
 require 'kron/domain/revisions'
 require 'kron/domain/revision'
 require 'kron/domain/manifest'
-require 'zip'
 
 module Kron
   module Repository
@@ -23,7 +24,7 @@ module Kron
     include Kron::Accessor::ManifestAccessor
     include Kron::Accessor::ChangesetAccessor
 
-    def init(force = false, verbose = false)
+    def init(force = false, bare = false, verbose = false)
       raise StandardError, 'Repository already exists, use \'kron init -f\' to overwrite' if !force && Dir.exist?(KRON_DIR)
 
       FileUtils.rm_rf(KRON_DIR)
@@ -31,7 +32,37 @@ module Kron
       init_index
       init_changeset_dir
       init_manifest_dir
+      File.write(IGNORE_PATH, '.kronignore') unless bare
+      # load configurations
+      # conf = Kron::Helper::Configurator.instance
       puts 'Kron repository initialized.' if verbose
+    end
+
+    def list_config
+      puts Kron::Helper::Configurator.instance
+    end
+
+    def set_config(name, author, verbose = false)
+      conf = Kron::Helper::Configurator.instance
+      conf['repository'] = name unless name.nil?
+      conf['author'] = author unless author.nil?
+      conf.sync verbose
+    end
+
+    def unset_config(keys, verbose = false)
+      conf = Kron::Helper::Configurator.instance
+      modified = false
+      keys.each do |key|
+        key = key.downcase
+        if conf.has? key
+          conf.delete key
+          modified = true
+          puts "Key '#{key}' removed." if verbose
+        else
+          puts "Key '#{key}' not found."
+        end
+      end
+      conf.sync if modified
     end
 
     def clone(repo_uri, force = false, verbose = false)
@@ -520,7 +551,7 @@ module Kron
           end
         end
       else
-        FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR,'tmp')
+        FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR, 'tmp')
       end
       FileUtils.rm_rf File.join(KRON_DIR, tmp_name)
       tar_revisions = load_rev(File.join(KRON_DIR, 'tmp', 'rev'))
@@ -600,7 +631,7 @@ module Kron
       end
     end
 
-    def merge(branch_name,author = nil,force = false)
+    def merge(branch_name, author = nil, force = false)
       revisions = load_rev
       cur_stage = load_stage
       cur_index = load_index
@@ -631,8 +662,8 @@ module Kron
       tar_revision = revisions.heads[branch_name]
       tar_manifest = load_manifest(tar_revision.id)
       conflict_files = []
-      tar_manifest.each_pair do |tar_file_name,tar_file_paras|
-        cur_index.each_pair do |cur_file_name,cur_file_paras|
+      tar_manifest.each_pair do |tar_file_name, tar_file_paras|
+        cur_index.each_pair do |cur_file_name, cur_file_paras|
           if (cur_file_name == tar_file_name) && (tar_file_paras[0] != cur_file_paras[0])
             conflict_files << tar_file_name
           end
@@ -647,7 +678,7 @@ module Kron
             condition = STDIN.gets.chomp
             break if (condition == 'y') || (condition == 'n')
           end
-          keep_self.store(file,cur_index[file]) if condition == 'n'
+          keep_self.store(file, cur_index[file]) if condition == 'n'
         end
       end
       keep_self.each_pair do |file, paras|
@@ -753,9 +784,7 @@ module Kron
 
     def cat(rev_id = nil, branch = nil, paths)
       rev = load_rev
-      if branch.nil? && rev_id.nil?
-        branch = rev.current[0]
-      end
+      branch = rev.current[0] if branch.nil? && rev_id.nil?
       if branch
         brch = rev.heads[branch]
         if brch
