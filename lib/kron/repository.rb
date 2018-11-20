@@ -780,7 +780,7 @@ module Kron
       end
     end
 
-    def cat(rev_id = nil, branch = nil, paths)
+    def cat(rev_id = nil, branch = nil, paths, verbose)
       rev = load_rev
       branch = rev.current[0] if branch.nil? && rev_id.nil?
       if branch
@@ -811,16 +811,15 @@ module Kron
         hash = mf[path]
         src = File.join(OBJECTS_DIR + [hash[0][0..1], hash[0][2..-1]].join('/')) if hash
         if hash && File.exist?(src)
-          buffer.print path.to_s.colorize(color: :light_cyan, mode: :bold)
-          buffer.puts ' >>>>>'.colorize(color: :blue, mode: :bold)
+          buffer.print path.to_s.colorize(color: :light_cyan, mode: :bold) if verbose
+          buffer.puts ' >>>>>'.colorize(color: :blue, mode: :bold) if verbose
           File.read(src).each_line do |row|
             buffer.puts row
           end
-          buffer.puts(('<' * (6 + len)).colorize(color: :blue, mode: :bold))
+          buffer.print(('<' * (6 + len)).colorize(color: :blue, mode: :bold)) if verbose
         else
           buffer.puts "File '#{path}' not found.".colorize(color: :red)
         end
-        buffer.puts
       end
       puts buffer.string
     end

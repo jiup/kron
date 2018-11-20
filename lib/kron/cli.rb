@@ -213,11 +213,13 @@ module Kron
       c.flag %i[c revision], arg_name: '<rev_id>'
       c.desc 'Show latest file revision of a branch'
       c.flag %i[b branch], arg_name: '<branch>'
+      c.desc 'Suppress optional output'
+      c.switch %i[q quiet], negatable: false
       c.action do |_global_options, options, paths|
         exit_now!('file paths required') if paths.empty?
         help_now!('you can only give one of both branch and revision') if options[:c] && options[:b]
         assert_repo_exist
-        cat(options[:c], options[:b], paths)
+        cat(options[:c], options[:b], paths, !options[:q])
       end
     end
 
