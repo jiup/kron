@@ -748,9 +748,7 @@ module Kron
     end
 
     def logs(branch = nil)
-      r = load_rev
-      p r.rev_map.keys
-      return
+      load_rev
       buffer = {}
       brch = load_rev.heads[branch]
       if branch
@@ -796,17 +794,20 @@ module Kron
 
       buffer = StringIO.new
       paths.each do |path|
-        buffer.puts "#{path}:"
+        len = path.length
+        buffer.print path.to_s.colorize(color: :light_cyan, mode: :bold)
+        buffer.puts ' >>>>>'.colorize(color: :cyan, mode: :bold)
         hash = mf[path]
         src = File.join(OBJECTS_DIR + [hash[0][0..1], hash[0][2..-1]].join('/')) if hash
         if hash && File.exist?(src)
           File.read(src).each_line do |row|
             buffer.puts row
           end
+          buffer.puts('<' * (6 + len)).colorize(color: :cyan, mode: :bold)
         else
           buffer.puts 'File Not Found.'
         end
-        buffer.puts ''
+        buffer.puts
       end
       puts buffer.string
     end
