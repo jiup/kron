@@ -14,6 +14,7 @@ require 'kron/domain/revision'
 require 'kron/domain/revisions'
 require 'kron/domain/stage'
 require 'kron/domain/working_directory'
+require 'kron/helper/configurator'
 require 'kron/helper/repo_fetcher'
 
 module Kron
@@ -36,13 +37,45 @@ module Kron
       end
     end
 
+    desc 'Get and set repository or global options'
+    command [:config] do |c|
+      c.desc 'Unset configuration'
+      c.switch %i[unset rm], negatable: false
+      c.desc 'Name of the repository'
+      c.flag %i[n name], arg_name: '<repo_name>'
+      c.desc 'Commit author'
+      c.flag %i[u user author], arg_name: '<author>'
+      # c.desc 'Revision abbreviation length'
+      # c.flag %i[abbrev], arg_name: '<abbrev_len>'
+      # c.desc 'Server token length'
+      # c.flag %i[token], arg_name: '<token_len>'
+      c.action do |global_options, options, args|
+        if options[:unset]
+          help_now!('configuration keys required') if args.empty?
+          assert_repo_exist
+          unset_config(args, global_options[:v])
+        else
+          help_now!('no arguments required') unless args.empty?
+          assert_repo_exist
+          if options[:n].nil? &&
+             options[:u].nil?
+            list_config
+          else
+            set_config(options[:n], options[:u], global_options[:v])
+          end
+        end
+      end
+    end
+
     desc 'Create an empty kron repository'
     command [:init, :create] do |c|
       c.desc 'Reinitialize if a repository already exists'
       c.switch %i[f force], negatable: false
+      c.desc 'Initialize a bare repository (keep working directory empty)'
+      c.switch %i[b bare], negatable: false
       c.action do |global_options, options, args|
         help_now!('no arguments required') unless args.empty?
-        init(options[:f], global_options[:v])
+        init(options[:f], options[:b], global_options[:v])
       end
     end
 
@@ -166,6 +199,14 @@ module Kron
       end
     end
 
+    desc 'Show differences between revisions'
+    command [:diff, :compare] do |c|
+      c.action do |_global_options, _options, args|
+        assert_repo_exist
+        # TODO: invoke 'kron diff <args[0]> [<args[1]>]'
+      end
+    end
+
     desc 'Print text of a file of a specific revision'
     command [:cat, :lookup] do |c|
       c.desc 'Show file content of a specific revision'
@@ -174,7 +215,6 @@ module Kron
       c.flag %i[b branch], arg_name: '<branch>'
       c.action do |_global_options, options, paths|
         exit_now!('file paths required') if paths.empty?
-        help_now!('a branch or revision required') if options[:c].nil? && options[:b].nil?
         help_now!('you can only give one of both branch and revision') if options[:c] && options[:b]
         assert_repo_exist
         cat(options[:c], options[:b], paths)
@@ -187,7 +227,7 @@ module Kron
       c.flag %i[b branch], arg_name: '<branch>'
       c.action do |_global_options, options, _args|
         assert_repo_exist
-        head(options[:b])
+        heads(options[:b])
       end
     end
 
@@ -266,15 +306,14 @@ module Kron
     desc 'Join two or more development histories together'
     arg '<branch_name>'
     command [:merge] do |c|
-      # TODO: add more flags
       c.desc 'Show a diff stat only, no file will be changed'
       c.switch %i[n stat], negatable: false
       c.desc 'Suppress the output'
       c.switch %i[q quiet], negatable: false
-      c.action do |_global_options, _options, _args|
+      c.action do |_global_options, _options, args|
+        help_now!('branch or commit_id required') unless args.length == 1
         assert_repo_exist
-        merge(_args[0])
-        exit_now! 'Command not implemented'
+        merge(args[0])
       end
     end
 
@@ -301,6 +340,8 @@ module Kron
 
     desc 'Start kron server for remote transmission'
     command [:serve] do |c|
+      conf = Kron::Helper::Configurator.instance
+      default_token = conf.has?('repository') ? conf['repository'] : SecureRandom.alphanumeric(DEFAULT_TOKEN)
       c.desc 'Suppress the output'
       c.switch %i[q quiet], negatable: false
       c.desc 'Keep online for multiple serve'
@@ -308,7 +349,7 @@ module Kron
       c.desc 'Specify port for server'
       c.flag %i[p port], arg_name: '<port>'
       c.desc 'Specific token for remote service, if this field not given, an random token will be used'
-      c.flag %i[t token], mask: true, arg_name: '<token>', default_value: SecureRandom.alphanumeric(DEFAULT_TOKEN)
+      c.flag %i[t token], arg_name: '<token>', default_value: default_token
       c.action do |_global_options, options, args|
         help_now!('no arguments required') unless args.empty?
         assert_repo_exist
