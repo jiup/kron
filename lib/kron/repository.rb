@@ -14,6 +14,7 @@ require 'kron/domain/revisions'
 require 'kron/domain/revision'
 require 'kron/domain/manifest'
 require 'zip'
+require 'socket'
 
 module Kron
   module Repository
@@ -195,7 +196,7 @@ module Kron
       stage.to_modify.each { |f| cs.put('@modified_files', f) }
       stage.to_delete.each { |f| cs.put('@deleted_files', f) }
       cs.commit_message = message
-      cs.author = author
+      cs.author = author ? author : Socket.gethostname
       cs.timestamp = Time.now.to_i
       # add a revision
       revision = Kron::Domain::Revision.new
