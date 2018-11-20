@@ -80,7 +80,6 @@ module Kron
 
         new_hash = Digest::SHA1.file(path).hexdigest
         if index.include? path
-          # p 'to_modify' + stage.to_add.to_s
           old_hash = index[path][0]
           if old_hash == new_hash
             puts "File '#{path}' unchanged, skip add." if verbose
@@ -215,15 +214,6 @@ module Kron
       remove_stage
     end
 
-    # @param [Object] b_name
-    # def branch(b_name, is_delete = false)
-    #   revisions = load_rev
-    #
-    #   raise StandardError, "branch '#{b_name}' already exist" if revisions.heads[b_name]
-    #
-    #   revisions.current[0] = b_name if revisions.current[0].nil?
-    #   revisions.heads.store(b_name, revisions.current[1])
-    # end
 
     def add_branch(b_name)
       if (b_name =~ /^[a-zA-Z0-9]{1,32}$/).nil?
@@ -491,6 +481,7 @@ module Kron
     #     end
     #   end
     # end
+
     def find_path(b1)
       path_b1 = []
       while b1
@@ -507,6 +498,7 @@ module Kron
         unless stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
           raise StandardError, 'something in stage need to commit'
         end
+
         wd = SortedSet.new
         Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
         tracked = Set.new
@@ -517,7 +509,6 @@ module Kron
             raise StandardError, "modified files unstaged, use 'kron status' to check, '-f' to overwrite"
           end
         end
-        # untracked = wd - tracked
       end
       Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
       tmp_name = repo_uri.split('/')[-1]
@@ -535,8 +526,14 @@ module Kron
       FileUtils.rm_rf File.join(KRON_DIR, tmp_name)
       tar_revisions = load_rev(File.join(KRON_DIR, 'tmp', 'rev'))
       revisions = load_rev
-
-      cur_revision = revisions.heads[revisions.current[0]]
+      if revisions.heads.key? tar_branch
+        tar_revisions.rev_map.each_key do |key|
+          next unless revisions.rev_map.key? key
+          unless force
+            raise StandardError, "can not pull #{tar_branch}. revision comfliction"
+          end
+        end
+      end
       tar_cur_revision = tar_revisions.heads[tar_branch]
       tmp_revision = tar_cur_revision
       ancestor_id = 0
@@ -549,6 +546,9 @@ module Kron
           tmp_now_revision = tmp_revision
           tmp_revision = tmp_revision.p_node
         end
+      end
+      if tmp_now_revision.nil?
+        raise StandardError, "#{tar_branch} already up to date"
       end
       raise StandardError, 'can not find common ancestor' if ancestor_id == 0
       # update revisions.heads {tar_branch:tar_cur_revision}
@@ -598,11 +598,9 @@ module Kron
       else
         raise StandardError, 'last commit is not merge commit '
       end
-
     end
 
     def merge(branch_name,author = nil,force = false)
-
       revisions = load_rev
       cur_stage = load_stage
       cur_index = load_index
@@ -640,7 +638,6 @@ module Kron
         end
       end
       keep_self = {}
-      p conflict_files
       unless conflict_files.empty?
         conflict_files.each do |file|
           condition = nil
@@ -657,15 +654,12 @@ module Kron
       end
       to_modify = Set.new(conflict_files) - Set.new(keep_self.keys)
       to_add = Set.new(tar_manifest.items.keys) - Set.new(cur_index.items.keys)
-
       tar_manifest.each_pair do |tar_file_name, tar_file_paras|
         cur_index.put([tar_file_name, tar_file_paras].flatten)
       end
-
       revision = Kron::Domain::Revision.new
       revision.p_node = cur_revision
       revision.merge = tar_revision
-
       mf = Kron::Domain::Manifest.new
       mf.rev_id = 'new_manifest.tmp'
       cur_index.each_pair do |k, v|
@@ -678,7 +672,6 @@ module Kron
       cs.commit_message = "merge #{branch_name}"
       cs.author = author
       cs.timestamp = Time.now.to_i
-
       sync_changeset(cs)
       sync_manifest(mf)
       manifest_hash = Digest::SHA1.file(MANIFEST_DIR + 'new_manifest.tmp').hexdigest
