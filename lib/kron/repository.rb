@@ -491,7 +491,6 @@ module Kron
     end
 
     def pull(repo_uri, tar_branch, force = false, verbose = false)
-      # FileUtils.rm_rf File.join(WORKING_DIR, 'tmp') if File.exist? File.join(WORKING_DIR, 'tmp')
       stage = load_stage
       index = load_index
       unless force
@@ -530,7 +529,7 @@ module Kron
         tar_revisions.rev_map.each_key do |key|
           next unless revisions.rev_map.key? key
           unless force
-            raise StandardError, "can not pull #{tar_branch}. revision comfliction"
+            raise StandardError, "revision conflict, can not pull '#{tar_branch}'."
           end
         end
       end
@@ -551,6 +550,7 @@ module Kron
         raise StandardError, "#{tar_branch} already up to date"
       end
       raise StandardError, 'can not find common ancestor' if ancestor_id == 0
+
       # update revisions.heads {tar_branch:tar_cur_revision}
       revisions.heads.store(tar_branch, tar_cur_revision)
       tmp_now_revision.p_node = revisions.rev_map[ancestor_id]
@@ -568,7 +568,7 @@ module Kron
           FileUtils.cp File.join(KRON_DIR, 'tmp', 'changeset', file), File.join(CHANGESET_DIR, file)
         end
       end
-      #combine objects
+      # combine objects
       Dir.foreach(File.join(KRON_DIR, 'tmp', 'objects')) do |subdir|
         if File.exist?(File.join(OBJECTS_DIR, subdir))
           if subdir != '.' && subdir != '..'
@@ -582,7 +582,7 @@ module Kron
           FileUtils.cp_r KRON_DIR + 'tmp/objects/' + subdir + '/', OBJECTS_DIR + subdir
         end
       end
-      FileUtils.rm_rf File.join(KRON_DIR,'tmp')
+      FileUtils.rm_rf File.join(KRON_DIR, 'tmp')
     end
 
     def cancel_merge
@@ -596,7 +596,7 @@ module Kron
         FileUtils.rm_rf File.join(MANIFEST_DIR, to_cancel_revision_id)
         FileUtils.rm_rf File.join(CHANGESET_DIR, to_cancel_revision_id)
       else
-        raise StandardError, 'last commit is not merge commit '
+        raise StandardError, 'cannot revert a non-merge commit'
       end
     end
 
