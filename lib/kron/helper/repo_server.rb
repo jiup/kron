@@ -117,7 +117,7 @@ module Kron
             subdir.delete('..')
             write_entries(subdir, zip_file_path, io)
           else
-            io.get_output_stream(zip_file_path) { |f| f.puts(File.open(disk_file_path, 'rb').read())}
+            io.get_output_stream(zip_file_path) { |f| f.print(File.open(disk_file_path, 'rb').read()) }
           end
         end
       end
