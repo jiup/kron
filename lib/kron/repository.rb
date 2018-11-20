@@ -66,21 +66,19 @@ module Kron
     end
 
     def clone(repo_uri, force = false, verbose = false)
-      # if Kron::Helper::RepoFetcher.from(repo_uri, BASE_DIR, force, verbose)
-      #   # TODO: recovery the working directory from HEAD revision
-      # end
-      Kron::Helper::RepoFetcher.from(repo_uri, BASE_DIR, force, verbose)
-      tmp_name = repo_uri.split('/')[-1]
-      if File.file? File.join(BASE_DIR, tmp_name)
-        FileUtils.mkdir File.join(BASE_DIR, '.kron')
-        Zip::File.open(File.join(BASE_DIR, File.basename(repo_uri)), Zip::File::CREATE) do |zip_file|
-          zip_file.each do |file|
-            f_path = File.join(BASE_DIR, '.kron', file.name)
-            zip_file.extract(file, f_path) unless File.exist?(f_path)
+      if Kron::Helper::RepoFetcher.from(repo_uri, BASE_DIR, force, verbose)
+        tmp_name = repo_uri.split('/')[-1]
+        if File.file? File.join(BASE_DIR, tmp_name)
+          FileUtils.mkdir File.join(BASE_DIR, '.kron')
+          Zip::File.open(File.join(BASE_DIR, File.basename(repo_uri)), Zip::File::CREATE) do |zip_file|
+            zip_file.each do |file|
+              f_path = File.join(BASE_DIR, '.kron', file.name)
+              zip_file.extract(file, f_path) unless File.exist?(f_path)
+            end
           end
         end
+        FileUtils.rm_rf File.join(BASE_DIR, tmp_name)
       end
-      FileUtils.rm_rf File.join(BASE_DIR, tmp_name)
     end
 
     def add(file_path, force = false, recursive = true, verbose = true)
