@@ -498,7 +498,7 @@ module Kron
 
     def list_index
       index = load_index
-      if index.each_pair.size > 0
+      if !index.each_pair.empty?
         puts 'Tracked files:'
         size_limit = index.each_pair.map { |e| e[1][1].to_s.length }.max
         path_limit = index.each_pair.map { |e| e[0].to_s.length }.max
@@ -648,11 +648,23 @@ module Kron
       revisions = load_rev
       cur_stage = load_stage
       cur_index = load_index
+      tar_revision = nil 
       if revisions.current[0].nil?
         raise StandardError, "HEAD detached at #{revisions.current[1].id}"
       end
+
       unless revisions.heads.key? branch_name
-        raise StandardError, "branch #{branch_name} not found"
+        matched = []
+        revisions.rev_map.each_key do |id|
+          matched << id unless (id =~ /#{branch_name}/).nil?
+        end
+        if matched.empty?
+          raise StandardError, "branch or revision #{branch_name} not found"
+        elsif matched.size > 1
+          raise StandardError, "revision '#{branch_name}' is ambiguous"
+        elsif matched.size == 1
+          tar_revision = revisions.rev_map[matched[0]]
+        end
       end
 
       unless force
@@ -672,7 +684,7 @@ module Kron
         end
       end
       cur_revision = revisions.current[1]
-      tar_revision = revisions.heads[branch_name]
+      tar_revision = tar_revision.nil? ? revisions.heads[branch_name] : tar_revision
       tar_manifest = load_manifest(tar_revision.id)
       conflict_files = []
       tar_manifest.each_pair do |tar_file_name, tar_file_paras|
@@ -758,7 +770,7 @@ module Kron
       if branch
         brch = load_rev.heads[branch]
         if brch
-          fetch_branch_logs(brch, Array.new)
+          fetch_branch_logs(brch, [])
         else
           puts "branch '#{branch}' not found"
         end
@@ -789,7 +801,7 @@ module Kron
       brch = load_rev.heads[branch]
       if branch
         if brch
-          fetch_branch_logs(brch, Array.new, 1)
+          fetch_branch_logs(brch, [], 1)
         else
           puts "branch '#{branch}' not found"
         end
@@ -850,7 +862,7 @@ module Kron
           return
         end
       end
-      size_limit = rvs.heads.keys.each.map { |e| e.length }.max
+      size_limit = rvs.heads.keys.each.map(&:length).max
       rvs.heads.keys.each do |branch_name|
         next unless (branch == branch_name) || branch.nil?
 
