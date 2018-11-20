@@ -62,10 +62,3 @@ module Kron
     end
   end
 end
-
-# a = Kron::Domain::Changeset.new(1)
-# a.put("@added_files", "time runs out")
-# a.put("@added_files", "time runs out2")
-# puts a.added_files.to_s
-# a.each_attr{|a,v| p a,v}
-# # print a.to_s

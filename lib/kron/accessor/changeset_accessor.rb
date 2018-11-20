@@ -24,8 +24,12 @@ module Kron
 
         Zlib::Inflate.inflate(File.read(src)).each_line do |line|
           params = line.chop.split(':', 2)
-          params[-1].split(',').each do |v|
-            changeset.put(params[0], v)
+          if params[0] =~ /@*_files/
+            params[-1].split(',').each do |v|
+              changeset.put(params[0], v)
+            end
+          else
+            changeset.put(params[0], params[-1])
           end
         end
         changeset
