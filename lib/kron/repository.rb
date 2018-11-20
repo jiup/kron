@@ -510,79 +510,81 @@ module Kron
           end
         end
       end
-      Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
-      tmp_name = repo_uri.split('/')[-1]
-      if File.file? File.join(KRON_DIR, tmp_name)
-        FileUtils.mkdir File.join(KRON_DIR, 'tmp')
-        Zip::File.open(File.join(KRON_DIR, File.basename(repo_uri)), Zip::File::CREATE) do |zip_file|
-          zip_file.each do |file|
-            f_path = File.join(KRON_DIR, 'tmp', file.name)
-            zip_file.extract(file, f_path) unless File.exist?(f_path)
-          end
-        end
-      else
-        FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR,'tmp')
-      end
-      FileUtils.rm_rf File.join(KRON_DIR, tmp_name)
-      tar_revisions = load_rev(File.join(KRON_DIR, 'tmp', 'rev'))
-      revisions = load_rev
-      if revisions.heads.key? tar_branch
-        tar_revisions.rev_map.each_key do |key|
-          next unless revisions.rev_map.key? key
-          unless force
-            raise StandardError, "can not pull #{tar_branch}. revision comfliction"
-          end
-        end
-      end
-      tar_cur_revision = tar_revisions.heads[tar_branch]
-      tmp_revision = tar_cur_revision
-      ancestor_id = 0
-      until tmp_revision.nil?
-        if revisions.rev_map.key? tmp_revision.id
-          ancestor_id = tmp_revision.id
-          break
-        else
-          revisions.rev_map.store(tmp_revision.id, tmp_revision)
-          tmp_now_revision = tmp_revision
-          tmp_revision = tmp_revision.p_node
-        end
-      end
-      if tmp_now_revision.nil?
-        raise StandardError, "#{tar_branch} already up to date"
-      end
-      raise StandardError, 'can not find common ancestor' if ancestor_id == 0
-      # update revisions.heads {tar_branch:tar_cur_revision}
-      revisions.heads.store(tar_branch, tar_cur_revision)
-      tmp_now_revision.p_node = revisions.rev_map[ancestor_id]
-
-      sync_rev revisions
-      # combine manifest
-      Dir.foreach(File.join(KRON_DIR, 'tmp', 'manifest')) do |file|
-        unless File.exist?(File.join(MANIFEST_DIR, file))
-          FileUtils.cp File.join(KRON_DIR, 'tmp', 'manifest', file), File.join(MANIFEST_DIR, file)
-        end
-      end
-      # combine changeset
-      Dir.foreach(File.join(KRON_DIR, 'tmp', 'changeset')) do |file|
-        unless File.exist?(File.join(CHANGESET_DIR, file))
-          FileUtils.cp File.join(KRON_DIR, 'tmp', 'changeset', file), File.join(CHANGESET_DIR, file)
-        end
-      end
-      #combine objects
-      Dir.foreach(File.join(KRON_DIR, 'tmp', 'objects')) do |subdir|
-        if File.exist?(File.join(OBJECTS_DIR, subdir))
-          if subdir != '.' && subdir != '..'
-            Dir.foreach(File.join(KRON_DIR, 'tmp', 'objects', subdir)) do |file|
-              unless File.exist?(File.join(OBJECTS_DIR, subdir, file))
-                FileUtils.cp File.join(KRON_DIR, 'tmp', 'objects', subdir, file), File.join(OBJECTS_DIR, subdir, file)
-              end
+      begin
+        Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
+        tmp_name = repo_uri.split('/')[-1]
+        if File.file? File.join(KRON_DIR, tmp_name)
+          FileUtils.mkdir File.join(KRON_DIR, 'tmp')
+          Zip::File.open(File.join(KRON_DIR, File.basename(repo_uri)), Zip::File::CREATE) do |zip_file|
+            zip_file.each do |file|
+              f_path = File.join(KRON_DIR, 'tmp', file.name)
+              zip_file.extract(file, f_path) unless File.exist?(f_path)
             end
           end
         else
-          FileUtils.cp_r KRON_DIR + 'tmp/objects/' + subdir + '/', OBJECTS_DIR + subdir
+          FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR, 'tmp')
         end
+
+        tar_revisions = load_rev(File.join(KRON_DIR, 'tmp', 'rev'))
+        revisions = load_rev
+        if revisions.heads.key? tar_branch
+          unless revisions.rev_map.key? tar_revisions.heads[tar_branch].id
+            raise StandardError, "revision conflict, can not pull '#{tar_branch}' ."
+          end
+        end
+        tar_cur_revision = tar_revisions.heads[tar_branch]
+        tmp_revision = tar_cur_revision
+        ancestor_id = 0
+        until tmp_revision.nil?
+          if revisions.rev_map.key? tmp_revision.id
+            ancestor_id = tmp_revision.id
+            break
+          else
+            revisions.rev_map.store(tmp_revision.id, tmp_revision)
+            tmp_now_revision = tmp_revision
+            tmp_revision = tmp_revision.p_node
+          end
+        end
+        if tmp_now_revision.nil?
+          raise StandardError, "#{tar_branch} already up to date"
+        end
+        raise StandardError, 'can not find common ancestor' if ancestor_id == 0
+        # update revisions.heads {tar_branch:tar_cur_revision}
+        revisions.heads.store(tar_branch, tar_cur_revision)
+        tmp_now_revision.p_node = revisions.rev_map[ancestor_id]
+
+        sync_rev revisions
+        # combine manifest
+        Dir.foreach(File.join(KRON_DIR, 'tmp', 'manifest')) do |file|
+          unless File.exist?(File.join(MANIFEST_DIR, file))
+            FileUtils.cp File.join(KRON_DIR, 'tmp', 'manifest', file), File.join(MANIFEST_DIR, file)
+          end
+        end
+        # combine changeset
+        Dir.foreach(File.join(KRON_DIR, 'tmp', 'changeset')) do |file|
+          unless File.exist?(File.join(CHANGESET_DIR, file))
+            FileUtils.cp File.join(KRON_DIR, 'tmp', 'changeset', file), File.join(CHANGESET_DIR, file)
+          end
+        end
+        #combine objects
+        Dir.foreach(File.join(KRON_DIR, 'tmp', 'objects')) do |subdir|
+          if File.exist?(File.join(OBJECTS_DIR, subdir))
+            if subdir != '.' && subdir != '..'
+              Dir.foreach(File.join(KRON_DIR, 'tmp', 'objects', subdir)) do |file|
+                unless File.exist?(File.join(OBJECTS_DIR, subdir, file))
+                  FileUtils.cp File.join(KRON_DIR, 'tmp', 'objects', subdir, file), File.join(OBJECTS_DIR, subdir, file)
+                end
+              end
+            end
+          else
+            FileUtils.cp_r KRON_DIR + 'tmp/objects/' + subdir + '/', OBJECTS_DIR + subdir
+          end
+        end
+      ensure
+        FileUtils.rm_rf File.join(KRON_DIR, 'tmp')
+        FileUtils.rm_rf File.join(KRON_DIR, tmp_name)
       end
-      FileUtils.rm_rf File.join(KRON_DIR,'tmp')
+
     end
 
     def cancel_merge
@@ -600,7 +602,7 @@ module Kron
       end
     end
 
-    def merge(branch_name,author = nil,force = false)
+    def merge(branch_name, author = nil, force = false)
       revisions = load_rev
       cur_stage = load_stage
       cur_index = load_index
@@ -630,8 +632,8 @@ module Kron
       tar_revision = revisions.heads[branch_name]
       tar_manifest = load_manifest(tar_revision.id)
       conflict_files = []
-      tar_manifest.each_pair do |tar_file_name,tar_file_paras|
-        cur_index.each_pair do |cur_file_name,cur_file_paras|
+      tar_manifest.each_pair do |tar_file_name, tar_file_paras|
+        cur_index.each_pair do |cur_file_name, cur_file_paras|
           if (cur_file_name == tar_file_name) && (tar_file_paras[0] != cur_file_paras[0])
             conflict_files << tar_file_name
           end
@@ -646,7 +648,7 @@ module Kron
             condition = STDIN.gets.chomp
             break if (condition == 'y') || (condition == 'n')
           end
-          keep_self.store(file,cur_index[file]) if condition == 'n'
+          keep_self.store(file, cur_index[file]) if condition == 'n'
         end
       end
       keep_self.each_pair do |file, paras|
