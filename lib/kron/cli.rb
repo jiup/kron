@@ -179,11 +179,11 @@ module Kron
     end
 
     desc 'Show head revisions'
-    command [:head, :heads] do |c|
+    command [:heads, :heads] do |c|
       c.desc 'Show head of a branch'
       c.flag %i[b branch], arg_name: '<branch>'
       c.action do |_global_options, options, _args|
-        head(options[:b])
+        heads(options[:b])
       end
     end
 

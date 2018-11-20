@@ -748,7 +748,6 @@ module Kron
     end
 
     def logs(branch = nil)
-      load_rev
       buffer = {}
       brch = load_rev.heads[branch]
       if branch
@@ -812,7 +811,7 @@ module Kron
       puts buffer.string
     end
 
-    def head(branch = nil)
+    def heads(branch = nil)
       if branch
         brch = load_rev.heads[branch]
         unless brch
@@ -821,15 +820,16 @@ module Kron
         end
       end
       rvs = load_rev
-      size_limit = rvs.heads.keys.each.map { |e| rvs.heads[e].id.length }.max
+      size_limit = rvs.heads.keys.each.map { |e| e.length }.max
       rvs.heads.keys.each do |branch_name|
         next unless (branch == branch_name) || branch.nil?
 
-        print "    #{branch_name}".colorize(color: :light_cyan)
+        print "    #{branch_name.ljust(size_limit)}".colorize(color: :light_cyan, mode: :bold)
         if rvs.current[0] == branch_name
-          puts " #{rvs.heads[branch_name].id.rjust(size_limit)} <- HEAD".colorize(color: :yellow)
+          print " #{rvs.heads[branch_name].id}"
+          puts ' <- HEAD'.colorize(color: :yellow, mode: :bold)
         else
-          puts " #{rvs.heads[branch_name].id.rjust(size_limit)}".colorize(color: :yellow)
+          puts " #{rvs.heads[branch_name].id}"
         end
       end
     end
