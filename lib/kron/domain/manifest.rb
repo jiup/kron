@@ -22,7 +22,7 @@ module Kron
           @items[file_path] = [
             Digest::SHA1.file(file_path).hexdigest,
             File.size(file_path),
-            File.ctime(file_path).to_i,
+            File.birthtime(file_path).to_i,
             File.mtime(file_path).to_i
           ]
         else

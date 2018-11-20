@@ -493,7 +493,7 @@ module Kron
         index.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
           print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
           print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
-          print "  #{attrs[1].ljust(size_limit)}".colorize(color: :blue)
+          print "  #{(attrs[1] + 'B').rjust(size_limit + 1)}".colorize(color: :blue)
           print "  #{file_path.ljust(path_limit)}"
           puts attrs[0] == Digest::SHA1.file(file_path).hexdigest ? '' : ' (modified)'.to_s.colorize(color: :red)
         end
