@@ -786,22 +786,25 @@ module Kron
 
       buffer = StringIO.new
       paths.each do |path|
-        buffer.puts "#{path}:"
+        len = path.length
+        buffer.print path.to_s.colorize(color: :light_cyan, mode: :bold)
+        buffer.puts ' >>>>>'.colorize(color: :cyan, mode: :bold)
         hash = mf[path]
         src = File.join(OBJECTS_DIR + [hash[0][0..1], hash[0][2..-1]].join('/')) if hash
         if hash && File.exist?(src)
           File.read(src).each_line do |row|
             buffer.puts row
           end
+          buffer.puts('<' * (6 + len)).colorize(color: :cyan, mode: :bold)
         else
           buffer.puts 'File Not Found.'
         end
-        buffer.puts ''
+        buffer.puts
       end
       puts buffer.string
     end
 
-    def head(branch = nil)
+    def heads(branch = nil)
       if branch
         brch = load_rev.heads[branch]
         unless brch
@@ -810,15 +813,16 @@ module Kron
         end
       end
       rvs = load_rev
-      size_limit = rvs.heads.keys.each.map { |e| rvs.heads[e].id.length }.max
+      size_limit = rvs.heads.keys.each.map { |e| e.length }.max
       rvs.heads.keys.each do |branch_name|
         next unless (branch == branch_name) || branch.nil?
 
-        print "    #{branch_name}".colorize(color: :light_cyan)
+        print "    #{branch_name.ljust(size_limit)}".colorize(color: :light_cyan, mode: :bold)
         if rvs.current[0] == branch_name
-          puts " #{rvs.heads[branch_name].id.rjust(size_limit)} <- HEAD".colorize(color: :yellow)
+          print " #{rvs.heads[branch_name].id}"
+          puts ' <- HEAD'.colorize(color: :yellow, mode: :bold)
         else
-          puts " #{rvs.heads[branch_name].id.rjust(size_limit)}".colorize(color: :yellow)
+          puts " #{rvs.heads[branch_name].id}"
         end
       end
     end
