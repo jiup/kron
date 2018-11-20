@@ -182,7 +182,7 @@ module Kron
         FileUtils.mkdir_p(File.dirname(dst_path))
         FileUtils.mv file_hash, dst_path, force: true
       end
-      # add Manifest TODO: why didn't directly copy it in disk?
+      # add Manifest
       mf = Kron::Domain::Manifest.new
       mf.rev_id = 'new_manifest.tmp'
       index.each_pair do |k, v|
@@ -615,6 +615,7 @@ module Kron
         unless cur_stage.to_add.empty? && cur_stage.to_modify.empty? && cur_stage.to_delete.empty?
           raise StandardError, 'something in stage need to commit'
         end
+
         wd = SortedSet.new
         Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
         tracked = Set.new
