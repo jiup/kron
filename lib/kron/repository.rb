@@ -700,7 +700,7 @@ module Kron
       raise LoadError, 'not a kron repository (run \'kron init\' to create a new repo)' unless Dir.exist?(KRON_DIR)
     end
 
-    def fetch_branch(brch, queue, recursive = nil)
+    def fetch_branch_logs(brch, queue, recursive = nil)
       if brch
         rev = brch.id
       else
@@ -708,20 +708,18 @@ module Kron
       end
       log(rev)
       queue.push(brch.p_node) if brch.p_node
-      if brch.respond_to?'merge'
-        if brch.p_node != brch.merge
-          queue.push(brch.merge)
-        end
+      unless brch.merge.nil?
+        queue.push(brch.merge) if brch.p_node != brch.merge
       end
       first_node = queue.shift
-      fetch_branch(first_node, queue, recursive) if recursive && brch
+      fetch_branch_logs(first_node, queue, recursive) if recursive && brch
     end
 
     def log(revision = nil, branch = nil)
       if branch
         brch = load_rev.heads[branch]
         if brch
-          fetch_branch(brch, Array.new)
+          fetch_branch_logs(brch, Array.new)
         else
           puts "branch '#{branch}' not found"
         end
@@ -748,27 +746,15 @@ module Kron
     end
 
     def logs(branch = nil)
-      r = load_rev
-      p r.rev_map.keys
-      return
-      buffer = {}
+      branch ||= load_rev.current[0] unless branch
       brch = load_rev.heads[branch]
       if branch
         if brch
-          fetch_branch(brch, Array.new, 1)
+          fetch_branch_logs(brch, Array.new, 1)
         else
           puts "branch '#{branch}' not found"
         end
-        return
       end
-      Dir.glob(CHANGESET_DIR + '*').each do |file_path|
-        revision = file_path.split('/')[-1]
-        cs = Kron::Domain::Changeset.new
-        cs.rev_id = revision
-        cs = load_changeset(cs)
-        buffer[cs.timestamp] = revision
-      end
-      buffer.keys.sort.reverse_each { |e| log(buffer[e]) }
     end
 
     def cat(rev_id = nil, branch = nil, paths)
