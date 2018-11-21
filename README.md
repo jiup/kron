@@ -1,8 +1,8 @@
 # Kron
 
-![liscence](https://img.shields.io/dub/l/vibe-d.svg) ![gem version](https://img.shields.io/badge/gem-2.1.0-green.svg) ![version](https://img.shields.io/badge/version-0.1.0-green.svg)
+![licence](https://img.shields.io/dub/l/vibe-d.svg) ![gem version](https://img.shields.io/badge/gem-2.1.0-green.svg) ![version](https://img.shields.io/badge/version-0.1.0-green.svg)
 
-Welcome to your Kron world! Kron is a distribute version control system which can be used to work both locally and remotely. It is efficient and easy to use. No get started following the instructions !
+Welcome to the **Kron** world! Kron is a distribute version control system which can be used to work both locally and remotely. It is efficient and easy to use, let's now get started by following the steps!
 
 ## Installation
 
@@ -60,7 +60,7 @@ A single Kron repository can maintain multiple branches of development. To creat
 $ kron branch add branch_name
 ```
 
-Type
+and then, we can type
 
 ```
 $ kron checkout branch_name
@@ -106,13 +106,13 @@ $ kron log -c revision_id
 
 or specify a the branch name you want to examine.
 
-For full kron commands, please use 
+For detailed kron manual, please type in
 
 ```
-$ kron
+$ kron help
 ```
 
-to print all current avalible commands to the screen.
+to see all available commands of your Kron.
 
 
 
