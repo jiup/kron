@@ -227,7 +227,7 @@ module Kron
       stage.to_modify.each { |f| cs.put('@modified_files', f) }
       stage.to_delete.each { |f| cs.put('@deleted_files', f) }
       cs.commit_message = message
-      cs.author = author ? author : Socket.gethostname
+      cs.author = author || Kron::Helper::Configurator.instance['author']
       cs.timestamp = Time.now.to_i
       # add a revision
       revision = Kron::Domain::Revision.new
@@ -295,7 +295,7 @@ module Kron
     #
     #   revisions.heads.delete(b_name)
     # end
-    
+
     def recover_wd(mf)
       new_index = Kron::Domain::Index.new
       mf.each_pair do |file_name, paras|
@@ -307,7 +307,7 @@ module Kron
       end
       sync_index(new_index)
     end
-    
+
     def rename_branch(old_name, new_name)
       revisions = load_rev
       raise StandardError, "branch '#{b_name}' not found" unless revisions.heads[old_name]
@@ -326,6 +326,7 @@ module Kron
         unless stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
           raise StandardError, 'something in stage need to commit'
         end
+
         wd = SortedSet.new
         Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
         tracked = Set.new
@@ -517,7 +518,7 @@ module Kron
       end
     end
 
-    #based on second revision ,if second revision is nil, based on current
+    # based on second revision, if second revision is nil, based on current
     def diff(args)
       revisions = load_rev
       if args.size == 1
@@ -802,7 +803,7 @@ module Kron
       revisions = load_rev
       cur_stage = load_stage
       cur_index = load_index
-      tar_revision = nil 
+      tar_revision = nil
       if revisions.current[0].nil?
         raise StandardError, "HEAD detached at #{revisions.current[1].id}"
       end
