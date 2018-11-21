@@ -24,7 +24,7 @@ module Kron
     extend GLI::StandardException
     extend Repository
 
-    program_desc 'A light-weight distributed version control software'
+    program_desc 'A light-weight distributed version control system'
     version Kron::VERSION
     sort_help :manually
     switch %i[v verbose], desc: 'Show verbose messages', negatable: false

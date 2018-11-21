@@ -6,20 +6,15 @@ Welcome to the **Kron** world! Kron is a distribute version control system which
 
 ## Installation
 
-Add this line to your application's Gemfile:
+Execute the setup bash (permission may required):
 
-```ruby
-gem 'kron'
-```
+    $ /path/to/kron/bin/setup
 
-And then execute:
+Check usability in your command line:
 
-    $ bundle
+    $ kron
 
-Or install it yourself as:
-
-    $ gem install kron
-
+Congratulation and enjoy!
 
 
 ## Quick Start
