@@ -986,7 +986,7 @@ module Kron
           File.read(src).each_line do |row|
             buffer.puts row
           end
-          buffer.print(('<' * (6 + len)).colorize(color: :blue, mode: :bold)) if verbose
+          buffer.puts(('<' * (6 + len)).colorize(color: :blue, mode: :bold)) if verbose
         else
           buffer.puts "File '#{path}' not found.".colorize(color: :red)
         end
