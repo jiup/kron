@@ -969,7 +969,7 @@ module Kron
         if brch
           mf = load_manifest(brch.id)
         else
-          puts "branch '#{branch}' not found"
+          puts 'no commit history nothing to cat'
           return
         end
       elsif rev_id
