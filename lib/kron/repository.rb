@@ -315,7 +315,7 @@ module Kron
     end
 
     def checkout(target, is_branch = false, force = false, verbose = true)
-      revisions = load_rev
+      revisions = load_rev``
       index = load_index
       stage = load_stage
       untracked = []
@@ -513,15 +513,38 @@ module Kron
         puts 'No tracked files.'
       end
     end
+
     #based on second revision ,if second revision is nil, based on current
     def diff(args)
       revisions = load_rev
       if args.size == 1
         one_revision = revisions.current[1].id
       elsif args.size == 2
-        one_revision = args[1]
+        matched = []
+        revisions.rev_map.each_key do |id|
+          matched << id unless (id =~ /#{args[1]}/).nil?
+        end
+        if matched.empty?
+          raise StandardError, "revision #{args[1]} not found"
+        elsif matched.size > 1
+          raise StandardError, "revision '#{args[1]}' is ambiguous"
+        elsif matched.size == 1
+          one_revision = revisions.rev_map[matched[0]].id
+        end
       end
-      two_revision = args[0]
+
+      matched = []
+      revisions.rev_map.each_key do |id|
+        matched << id unless (id =~ /#{args[0]}/).nil?
+      end
+      if matched.empty?
+        raise StandardError, "revision #{args[0]} not found"
+      elsif matched.size > 1
+        raise StandardError, "revision '#{args[0]}' is ambiguous"
+      elsif matched.size == 1
+        two_revision = revisions.rev_map[matched[0]].id
+      end
+
       one_mf = load_manifest one_revision
       two_mf = load_manifest two_revision
       common_files = {}
