@@ -1,6 +1,6 @@
 # Kron
 
-![licence](https://img.shields.io/dub/l/vibe-d.svg) ![gem version](https://img.shields.io/badge/gem-2.1.0-green.svg) ![version](https://img.shields.io/badge/version-0.1.0-green.svg)
+![licence](https://img.shields.io/dub/l/vibe-d.svg) ![gem version](https://img.shields.io/badge/gem-2.1.0-green.svg) ![version](https://img.shields.io/badge/version-0.2.1-green.svg)
 
 Welcome to the **Kron** world! Kron is a distribute version control system which can be used to work both locally and remotely. It is efficient and easy to use, let's now get started by following the steps!
 
