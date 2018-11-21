@@ -80,6 +80,8 @@ module Kron
         end
         FileUtils.rm_rf File.join(BASE_DIR, tmp_name)
       end
+      mf = load_manifest load_rev.current[1].id
+      recover_wd(mf)
     end
 
     def add(file_path, force = false, recursive = true, verbose = true)
@@ -700,10 +702,10 @@ module Kron
         end
 
         tar_revisions = load_rev(File.join(KRON_DIR, 'tmp', 'rev'))
-
+        #common branch
         if revisions.heads.key? tar_branch
           unless revisions.rev_map.key? tar_revisions.heads[tar_branch].id
-            unless tar_revisions.rev_map.key? revisions.current[1].id
+            unless tar_revisions.rev_map.key? revisions.heads[tar_branch].id
               raise StandardError, "revision conflict, can not pull '#{tar_branch}' ."
             end
           end
@@ -912,7 +914,7 @@ module Kron
       log(rev)
       queue.push(brch.p_node) if brch.p_node
       unless brch.merge.nil?
-        queue.push(brch.merge) if brch.p_node != brch.merge
+        # queue.push(brch.merge) if brch.p_node != brch.merge
       end
       first_node = queue.shift
       fetch_branch_logs(first_node, queue, recursive) if recursive && brch
@@ -967,7 +969,7 @@ module Kron
         if brch
           mf = load_manifest(brch.id)
         else
-          puts "branch '#{branch}' not found"
+          puts 'no commit history nothing to cat'
           return
         end
       elsif rev_id
