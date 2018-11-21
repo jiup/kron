@@ -1,5 +1,4 @@
 require 'set'
-require 'zip'
 require 'digest'
 require 'pathname'
 require 'colorize'
@@ -15,6 +14,8 @@ require 'kron/accessor/changeset_accessor'
 require 'kron/domain/revisions'
 require 'kron/domain/revision'
 require 'kron/domain/manifest'
+require 'zip'
+require 'socket'
 
 module Kron
   module Repository
@@ -224,7 +225,7 @@ module Kron
       stage.to_modify.each { |f| cs.put('@modified_files', f) }
       stage.to_delete.each { |f| cs.put('@deleted_files', f) }
       cs.commit_message = message
-      cs.author = author
+      cs.author = author ? author : Socket.gethostname
       cs.timestamp = Time.now.to_i
       # add a revision
       revision = Kron::Domain::Revision.new
@@ -785,14 +786,13 @@ module Kron
     end
 
     def logs(branch = nil)
-      branch ||= load_rev.current[0] unless branch
-      brch = load_rev.heads[branch]
-      if branch
-        if brch
-          fetch_branch_logs(brch, Array.new, 1)
-        else
-          puts "branch '#{branch}' not found"
-        end
+      rvs = load_rev
+      branch ||= rvs.current[0] unless branch
+      brch = rvs.heads[branch]
+      if brch
+        fetch_branch_logs(brch, Array.new, 1)
+      else
+        puts "on branch #{branch}, no commit history."
       end
     end
 
@@ -850,6 +850,11 @@ module Kron
         end
       end
       size_limit = rvs.heads.keys.each.map { |e| e.length }.max
+      if rvs.heads == {}
+        print rvs.current[0].to_s
+        puts ' <- HEAD'.colorize(color: :yellow, mode: :bold)
+        return
+      end
       rvs.heads.keys.each do |branch_name|
         next unless (branch == branch_name) || branch.nil?
 
