@@ -16,11 +16,20 @@ module Kron
           @quiet = quiet
         end
 
+        def self.compress_repo
+          ZipFileGenerator.new('.kron/', COMPRESSED_KRON_PATH).write
+          COMPRESSED_KRON_PATH
+        end
+
+        def self.rm_compressed_repo
+          FileUtils.rm_rf COMPRESSED_KRON_PATH
+        end
+
         def do_GET(_req, resp)
           puts 'Preparing for response...' unless @quiet
           begin
             print "Compressing repository '#{WORKING_DIR}'... " unless @quiet
-            ZipFileGenerator.new('.kron/', COMPRESSED_KRON_PATH).write
+            compress_repo
             puts 'Done' unless @quiet
           rescue StandardError => e
             puts 'Failed' unless @quiet
@@ -28,7 +37,7 @@ module Kron
           end
           resp.status = 200
           resp.body = File.new COMPRESSED_KRON_PATH
-          FileUtils.rm_rf COMPRESSED_KRON_PATH
+          rm_compressed_repo
           puts 'Transfer completed!' unless @quiet
           return @server.shutdown unless @multi_serve
 

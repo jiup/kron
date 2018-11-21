@@ -614,6 +614,22 @@ module Kron
       FileUtils.rm_rf File.join(KRON_DIR, 'tmp')
     end
 
+    def push(repo_uri, tar_branch)
+      tar_branch = current[0] if tar_branch.nil?
+      # uri = URI.parse(repo_uri)
+      # begin
+      #   zip_path = Kron::Helper::RepoServer::HttpRepoServer.compress_repo
+      #   File.open(Kron::Helper::RepoServer.COMPRESSED_KRON_PATH) do |f|
+      #     req = Net::HTTP::Post::Multipart.new(uri.request_uri, {zip_path => UploadIO.new(f, 'application/zip', "image.png")}.merge(data))
+      #     res = Net::HTTP.start(url.host, url.port) do |http|
+      #       http.request(req) ####TODO
+      #     end
+      #   end
+      # ensure
+      #   Kron::Helper::RepoServer::HttpRepoServer.rm_compressed_repo
+      # end
+    end
+
     def cancel_merge
       revisions = load_index
       if revisions.current[1].merge

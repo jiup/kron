@@ -336,7 +336,7 @@ module Kron
       c.action do |_global_options, _options, repo_uri|
         help_now!('repo_uri is required') if repo_uri.empty?
         assert_repo_exist
-        exit_now! 'Command not implemented'
+        push(repo_uri[0], repo_uri.length == 1 ? nil : repo_uri[1])
       end
     end
 
