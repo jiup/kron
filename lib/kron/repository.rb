@@ -550,6 +550,7 @@ module Kron
       two_mf = load_manifest two_revision
       common_files = {}
       conflict_files = {}
+      # conflict_files_other = {}
       deleted_files = {}
       added_files = {}
       two_mf.each_pair do |one_filename, one_para|
@@ -562,6 +563,7 @@ module Kron
               break
             else
               conflict_files.store one_filename, one_para
+              # conflict_files_other.store two_filename,
               add_flg = 1
               break
             end
@@ -575,61 +577,68 @@ module Kron
         end
       end
       unless common_files.empty?
-        puts 'Common files:  '
+        puts 'Same files:'
         size_limit = common_files.each_pair.map { |e| e[1][1].to_s.length }.max
         path_limit = common_files.each_pair.map { |e| e[0].to_s.length }.max
         common_files.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
           print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
           print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
-          print "  #{attrs[1].ljust(size_limit)}".colorize(color: :blue)
+          print "  #{(attrs[1] + 'B').rjust(size_limit + 1)}".colorize(color: :blue)
           print "  #{file_path.ljust(path_limit)}"
           puts
         end
         puts
       end
       unless conflict_files.empty?
-        puts 'Modified files:  '
+        puts 'Conflict files:'
         size_limit = conflict_files.each_pair.map { |e| e[1][1].to_s.length }.max
         path_limit = conflict_files.each_pair.map { |e| e[0].to_s.length }.max
         conflict_files.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
+          print "    #{Time.at(one_mf[file_path][2].to_i).strftime('%b %d %R')}".colorize(color: :green)
+          print "  #{Time.at(one_mf[file_path][3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
+          print "  #{(one_mf[file_path][1] + 'B').rjust(size_limit + 1)}".colorize(color: :blue)
+          print "  #{file_path.ljust(path_limit)}  "
+          print "#{one_revision[0..DEFAULT_ABBREV]}".colorize(color: :red)
+          puts
           print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
           print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
-          print "  #{attrs[1].ljust(size_limit)}".colorize(color: :blue)
-          print "  #{file_path.ljust(path_limit)}"
+          print "  #{(attrs[1] + 'B').rjust(size_limit + 1)}".colorize(color: :blue)
+          print "  #{file_path.ljust(path_limit)}  "
+          print "#{two_revision[0..DEFAULT_ABBREV]}".colorize(color: :black, background: :red)
           puts
         end
         puts
       end
       unless added_files.empty?
-        puts 'Added files:  '
+        print 'Files only in '
+        print "#{two_revision[0..DEFAULT_ABBREV]}".colorize(color: :light_cyan)
+        puts ':'
         size_limit = added_files.each_pair.map { |e| e[1][1].to_s.length }.max
         path_limit = added_files.each_pair.map { |e| e[0].to_s.length }.max
         added_files.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
           print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
           print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
-          print "  #{attrs[1].ljust(size_limit)}".colorize(color: :blue)
+          print "  #{(attrs[1] + 'B').rjust(size_limit + 1)}".colorize(color: :blue)
           print "  #{file_path.ljust(path_limit)}"
           puts
         end
         puts
       end
       unless deleted_files.empty?
-        puts 'Deleted files:  '
+        print 'Files only in '
+        print "#{one_revision[0..DEFAULT_ABBREV]}".colorize(color: :light_cyan)
+        puts ':'
         size_limit = deleted_files.each_pair.map { |e| e[1][1].to_s.length }.max
         path_limit = deleted_files.each_pair.map { |e| e[0].to_s.length }.max
         deleted_files.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
           print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
           print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
-          print "  #{attrs[1].ljust(size_limit)}".colorize(color: :blue)
+          print "  #{(attrs[1] + 'B').rjust(size_limit + 1)}".colorize(color: :blue)
           print "  #{file_path.ljust(path_limit)}"
           puts
         end
         puts
       end
-      # puts "Common files:  " + common_files.string
-      # puts "Modified files:  " + conflict_files.string
-      # puts "Added files:  " + added_files.string
-      # puts "Deleted files:  " + deleted_files.string
     end
 
     # def extract_zip(file, destination)

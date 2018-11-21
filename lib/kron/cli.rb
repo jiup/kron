@@ -203,10 +203,9 @@ module Kron
     command [:diff, :compare] do |c|
       c.action do |_global_options, _options, args|
         assert_repo_exist
-        if args.size > 2
-          help_now!("too many args, #{args.size} is given but less than 2 is required")
+        if args.size > 2 || args.empty?
+          help_now!("incorrect args, #{args.size} is given 1 or 2 is required")
         end
-        # TODO: invoke 'kron diff <args[0]> [<args[1]>]'
         diff(args)
       end
     end
