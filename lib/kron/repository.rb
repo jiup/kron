@@ -513,6 +513,100 @@ module Kron
         puts 'No tracked files.'
       end
     end
+    #based on second revision ,if second revision is nil, based on current
+    def diff(args)
+      revisions = load_rev
+      if args.size == 1
+        one_revision = revisions.current[1].id
+      elsif args.size == 2
+        one_revision = args[1]
+      end
+      two_revision = args[0]
+      one_mf = load_manifest one_revision
+      two_mf = load_manifest two_revision
+      common_files = {}
+      conflict_files = {}
+      deleted_files = {}
+      added_files = {}
+      two_mf.each_pair do |one_filename, one_para|
+        add_flg = 0
+        one_mf.each_pair do |two_filename, two_para|
+          if one_filename == two_filename
+            if one_para[0] == two_para[0]
+              common_files.store one_filename, one_para
+              add_flg = 1
+              break
+            else
+              conflict_files.store one_filename, one_para
+              add_flg = 1
+              break
+            end
+          end
+        end
+        added_files.store one_filename, one_para if add_flg == 0
+      end
+      one_mf.each_pair do |one_filename, one_para|
+        unless two_mf.items.key? one_filename
+          deleted_files.store one_filename, one_para
+        end
+      end
+      unless common_files.empty?
+        puts 'Common files:  '
+        size_limit = common_files.each_pair.map { |e| e[1][1].to_s.length }.max
+        path_limit = common_files.each_pair.map { |e| e[0].to_s.length }.max
+        common_files.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
+          print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
+          print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
+          print "  #{attrs[1].ljust(size_limit)}".colorize(color: :blue)
+          print "  #{file_path.ljust(path_limit)}"
+          puts
+        end
+        puts
+      end
+      unless conflict_files.empty?
+        puts 'Modified files:  '
+        size_limit = conflict_files.each_pair.map { |e| e[1][1].to_s.length }.max
+        path_limit = conflict_files.each_pair.map { |e| e[0].to_s.length }.max
+        conflict_files.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
+          print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
+          print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
+          print "  #{attrs[1].ljust(size_limit)}".colorize(color: :blue)
+          print "  #{file_path.ljust(path_limit)}"
+          puts
+        end
+        puts
+      end
+      unless added_files.empty?
+        puts 'Added files:  '
+        size_limit = added_files.each_pair.map { |e| e[1][1].to_s.length }.max
+        path_limit = added_files.each_pair.map { |e| e[0].to_s.length }.max
+        added_files.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
+          print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
+          print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
+          print "  #{attrs[1].ljust(size_limit)}".colorize(color: :blue)
+          print "  #{file_path.ljust(path_limit)}"
+          puts
+        end
+        puts
+      end
+      unless deleted_files.empty?
+        puts 'Deleted files:  '
+        size_limit = deleted_files.each_pair.map { |e| e[1][1].to_s.length }.max
+        path_limit = deleted_files.each_pair.map { |e| e[0].to_s.length }.max
+        deleted_files.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
+          print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
+          print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
+          print "  #{attrs[1].ljust(size_limit)}".colorize(color: :blue)
+          print "  #{file_path.ljust(path_limit)}"
+          puts
+        end
+        puts
+      end
+      # puts "Common files:  " + common_files.string
+      # puts "Modified files:  " + conflict_files.string
+      # puts "Added files:  " + added_files.string
+      # puts "Deleted files:  " + deleted_files.string
+    end
 
     # def extract_zip(file, destination)
     #   FileUtils.mkdir_p(destination)
@@ -533,10 +627,16 @@ module Kron
       end
     end
 
+    def deliver(repo_uri, force = false, verbose = false)
+      Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
+    end
+
     def pull(repo_uri, tar_branch, force = false, verbose = false)
       # FileUtils.rm_rf File.join(WORKING_DIR, 'tmp') if File.exist? File.join(WORKING_DIR, 'tmp')
       stage = load_stage
       index = load_index
+      revisions = load_rev
+      tar_branch = revisions.current[0] if tar_branch.nil?
       unless force
         unless stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
           raise StandardError, 'something in stage need to commit'
@@ -554,7 +654,6 @@ module Kron
         end
       end
       begin
-        Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
         tmp_name = repo_uri.split('/')[-1]
         if File.file? File.join(KRON_DIR, tmp_name)
           FileUtils.mkdir File.join(KRON_DIR, 'tmp')
@@ -569,11 +668,16 @@ module Kron
         end
 
         tar_revisions = load_rev(File.join(KRON_DIR, 'tmp', 'rev'))
-        revisions = load_rev
+
         if revisions.heads.key? tar_branch
           unless revisions.rev_map.key? tar_revisions.heads[tar_branch].id
-            raise StandardError, "revision conflict, can not pull '#{tar_branch}' ."
+            unless tar_revisions.rev_map.key? revisions.current[1].id
+              raise StandardError, "revision conflict, can not pull '#{tar_branch}' ."
+            end
           end
+        end
+        unless tar_revisions.heads.key? tar_branch
+          raise StandardError, "can not found branch '#{tar_branch}' ."
         end
         tar_cur_revision = tar_revisions.heads[tar_branch]
         tmp_revision = tar_cur_revision
