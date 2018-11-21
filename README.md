@@ -23,7 +23,7 @@ Congratulation and enjoy!
 
 ## Quick Start
 
-In order to receive help about a certain command, use `-h` option before the command
+For help about a specific command, please use `-h` option before that command
 
 ```
 $ kron -h command
@@ -47,7 +47,7 @@ To remove files from tracking list, use
 $ kron remove file_name
 ```
 
-In order to commit changes, excecute the following command with commit message
+In order to commit changes, execute the following command with commit message
 
 ```
 $ kron commit file_name -m 'commit message'
@@ -111,7 +111,7 @@ For detailed kron manual, please type in
 $ kron help
 ```
 
-to see all available commands of your Kron.
+or visit our [design document](https://github.com/jiup/kron/blob/master/DESIGNDOC.md) to see all available commands of your Kron.
 
 
 
