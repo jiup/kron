@@ -293,7 +293,19 @@ module Kron
     #
     #   revisions.heads.delete(b_name)
     # end
-
+    
+    def recover_wd(mf)
+      new_index = Kron::Domain::Index.new
+      mf.each_pair do |file_name, paras|
+        dir = paras[0][0..1]
+        file_hash = paras[0][2..-1]
+        FileUtils.mkdir_p File.dirname(file_name)
+        FileUtils.cp File.join(OBJECTS_DIR, dir, file_hash), File.join(WORKING_DIR, file_name)
+        new_index.put [file_name, paras].flatten
+      end
+      sync_index(new_index)
+    end
+    
     def rename_branch(old_name, new_name)
       revisions = load_rev
       raise StandardError, "branch '#{b_name}' not found" unless revisions.heads[old_name]
@@ -371,7 +383,7 @@ module Kron
         end
       end
 
-      new_index = Kron::Domain::Index.new
+
       now_files = Set.new index.each_pair.collect { |kv| kv[0] }
       target_files = Set.new mf.each_pair.collect { |kv| kv[0] }
       to_rm_files = now_files - target_files
@@ -379,6 +391,7 @@ module Kron
         FileUtils.rm_f File.join(WORKING_DIR, file)
       end
       # based on mf recover working directory and index.
+      new_index = Kron::Domain::Index.new
       mf.each_pair do |file_name, paras|
         dir = paras[0][0..1]
         file_hash = paras[0][2..-1]
@@ -386,8 +399,9 @@ module Kron
         FileUtils.cp File.join(OBJECTS_DIR, dir, file_hash), File.join(WORKING_DIR, file_name)
         new_index.put [file_name, paras].flatten
       end
-      revisions.current = [new_branch, revisions.rev_map[revision_id]]
       sync_index(new_index)
+
+      revisions.current = [new_branch, revisions.rev_map[revision_id]]
       sync_rev(revisions)
       if verbose
         if is_branch
@@ -501,6 +515,123 @@ module Kron
       end
     end
 
+    #based on second revision ,if second revision is nil, based on current
+    def diff(args)
+      revisions = load_rev
+      if args.size == 1
+        one_revision = revisions.current[1].id
+      elsif args.size == 2
+        matched = []
+        revisions.rev_map.each_key do |id|
+          matched << id unless (id =~ /#{args[1]}/).nil?
+        end
+        if matched.empty?
+          raise StandardError, "revision #{args[1]} not found"
+        elsif matched.size > 1
+          raise StandardError, "revision '#{args[1]}' is ambiguous"
+        elsif matched.size == 1
+          one_revision = revisions.rev_map[matched[0]].id
+        end
+      end
+
+      matched = []
+      revisions.rev_map.each_key do |id|
+        matched << id unless (id =~ /#{args[0]}/).nil?
+      end
+      if matched.empty?
+        raise StandardError, "revision #{args[0]} not found"
+      elsif matched.size > 1
+        raise StandardError, "revision '#{args[0]}' is ambiguous"
+      elsif matched.size == 1
+        two_revision = revisions.rev_map[matched[0]].id
+      end
+
+      one_mf = load_manifest one_revision
+      two_mf = load_manifest two_revision
+      common_files = {}
+      conflict_files = {}
+      deleted_files = {}
+      added_files = {}
+      two_mf.each_pair do |one_filename, one_para|
+        add_flg = 0
+        one_mf.each_pair do |two_filename, two_para|
+          if one_filename == two_filename
+            if one_para[0] == two_para[0]
+              common_files.store one_filename, one_para
+              add_flg = 1
+              break
+            else
+              conflict_files.store one_filename, one_para
+              add_flg = 1
+              break
+            end
+          end
+        end
+        added_files.store one_filename, one_para if add_flg == 0
+      end
+      one_mf.each_pair do |one_filename, one_para|
+        unless two_mf.items.key? one_filename
+          deleted_files.store one_filename, one_para
+        end
+      end
+      unless common_files.empty?
+        puts 'Common files:  '
+        size_limit = common_files.each_pair.map { |e| e[1][1].to_s.length }.max
+        path_limit = common_files.each_pair.map { |e| e[0].to_s.length }.max
+        common_files.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
+          print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
+          print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
+          print "  #{attrs[1].ljust(size_limit)}".colorize(color: :blue)
+          print "  #{file_path.ljust(path_limit)}"
+          puts
+        end
+        puts
+      end
+      unless conflict_files.empty?
+        puts 'Modified files:  '
+        size_limit = conflict_files.each_pair.map { |e| e[1][1].to_s.length }.max
+        path_limit = conflict_files.each_pair.map { |e| e[0].to_s.length }.max
+        conflict_files.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
+          print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
+          print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
+          print "  #{attrs[1].ljust(size_limit)}".colorize(color: :blue)
+          print "  #{file_path.ljust(path_limit)}"
+          puts
+        end
+        puts
+      end
+      unless added_files.empty?
+        puts 'Added files:  '
+        size_limit = added_files.each_pair.map { |e| e[1][1].to_s.length }.max
+        path_limit = added_files.each_pair.map { |e| e[0].to_s.length }.max
+        added_files.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
+          print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
+          print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
+          print "  #{attrs[1].ljust(size_limit)}".colorize(color: :blue)
+          print "  #{file_path.ljust(path_limit)}"
+          puts
+        end
+        puts
+      end
+      unless deleted_files.empty?
+        puts 'Deleted files:  '
+        size_limit = deleted_files.each_pair.map { |e| e[1][1].to_s.length }.max
+        path_limit = deleted_files.each_pair.map { |e| e[0].to_s.length }.max
+        deleted_files.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
+          print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
+          print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
+          print "  #{attrs[1].ljust(size_limit)}".colorize(color: :blue)
+          print "  #{file_path.ljust(path_limit)}"
+          puts
+        end
+        puts
+      end
+      # puts "Common files:  " + common_files.string
+      # puts "Modified files:  " + conflict_files.string
+      # puts "Added files:  " + added_files.string
+      # puts "Deleted files:  " + deleted_files.string
+    end
+
     # def extract_zip(file, destination)
     #   FileUtils.mkdir_p(destination)
     #
@@ -520,9 +651,15 @@ module Kron
       end
     end
 
+    def deliver(repo_uri, force = false, verbose = false)
+      Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
+    end
+
     def pull(repo_uri, tar_branch, force = false, verbose = false)
       stage = load_stage
       index = load_index
+      revisions = load_rev
+      tar_branch = revisions.current[0] if tar_branch.nil?
       unless force
         unless stage.to_add.empty? && stage.to_modify.empty? && stage.to_delete.empty?
           raise StandardError, 'something in stage need to commit'
@@ -539,80 +676,84 @@ module Kron
           end
         end
       end
-      Kron::Helper::RepoFetcher.from(repo_uri, KRON_DIR, force, verbose)
-      tmp_name = repo_uri.split('/')[-1]
-      if File.file? File.join(KRON_DIR, tmp_name)
-        FileUtils.mkdir File.join(KRON_DIR, 'tmp')
-        Zip::File.open(File.join(KRON_DIR, File.basename(repo_uri)), Zip::File::CREATE) do |zip_file|
-          zip_file.each do |file|
-            f_path = File.join(KRON_DIR, 'tmp', file.name)
-            zip_file.extract(file, f_path) unless File.exist?(f_path)
-          end
-        end
-      else
-        FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR, 'tmp')
-      end
-      FileUtils.rm_rf File.join(KRON_DIR, tmp_name)
-      tar_revisions = load_rev(File.join(KRON_DIR, 'tmp', 'rev'))
-      revisions = load_rev
-      if revisions.heads.key? tar_branch
-        tar_revisions.rev_map.each_key do |key|
-          next unless revisions.rev_map.key? key
-          unless force
-            raise StandardError, "revision conflict, can not pull '#{tar_branch}'."
-          end
-        end
-      end
-      tar_cur_revision = tar_revisions.heads[tar_branch]
-      tmp_revision = tar_cur_revision
-      ancestor_id = 0
-      until tmp_revision.nil?
-        if revisions.rev_map.key? tmp_revision.id
-          ancestor_id = tmp_revision.id
-          break
-        else
-          revisions.rev_map.store(tmp_revision.id, tmp_revision)
-          tmp_now_revision = tmp_revision
-          tmp_revision = tmp_revision.p_node
-        end
-      end
-      if tmp_now_revision.nil?
-        raise StandardError, "#{tar_branch} already up to date"
-      end
-      raise StandardError, 'can not find common ancestor' if ancestor_id == 0
-
-      # update revisions.heads {tar_branch:tar_cur_revision}
-      revisions.heads.store(tar_branch, tar_cur_revision)
-      tmp_now_revision.p_node = revisions.rev_map[ancestor_id]
-
-      sync_rev revisions
-      # combine manifest
-      Dir.foreach(File.join(KRON_DIR, 'tmp', 'manifest')) do |file|
-        unless File.exist?(File.join(MANIFEST_DIR, file))
-          FileUtils.cp File.join(KRON_DIR, 'tmp', 'manifest', file), File.join(MANIFEST_DIR, file)
-        end
-      end
-      # combine changeset
-      Dir.foreach(File.join(KRON_DIR, 'tmp', 'changeset')) do |file|
-        unless File.exist?(File.join(CHANGESET_DIR, file))
-          FileUtils.cp File.join(KRON_DIR, 'tmp', 'changeset', file), File.join(CHANGESET_DIR, file)
-        end
-      end
-      # combine objects
-      Dir.foreach(File.join(KRON_DIR, 'tmp', 'objects')) do |subdir|
-        if File.exist?(File.join(OBJECTS_DIR, subdir))
-          if subdir != '.' && subdir != '..'
-            Dir.foreach(File.join(KRON_DIR, 'tmp', 'objects', subdir)) do |file|
-              unless File.exist?(File.join(OBJECTS_DIR, subdir, file))
-                FileUtils.cp File.join(KRON_DIR, 'tmp', 'objects', subdir, file), File.join(OBJECTS_DIR, subdir, file)
-              end
+      begin
+        tmp_name = repo_uri.split('/')[-1]
+        if File.file? File.join(KRON_DIR, tmp_name)
+          FileUtils.mkdir File.join(KRON_DIR, 'tmp')
+          Zip::File.open(File.join(KRON_DIR, File.basename(repo_uri)), Zip::File::CREATE) do |zip_file|
+            zip_file.each do |file|
+              f_path = File.join(KRON_DIR, 'tmp', file.name)
+              zip_file.extract(file, f_path) unless File.exist?(f_path)
             end
           end
         else
-          FileUtils.cp_r KRON_DIR + 'tmp/objects/' + subdir + '/', OBJECTS_DIR + subdir
+          FileUtils.mv File.join(KRON_DIR, '.kron'), File.join(KRON_DIR, 'tmp')
         end
+
+        tar_revisions = load_rev(File.join(KRON_DIR, 'tmp', 'rev'))
+
+        if revisions.heads.key? tar_branch
+          unless revisions.rev_map.key? tar_revisions.heads[tar_branch].id
+            unless tar_revisions.rev_map.key? revisions.current[1].id
+              raise StandardError, "revision conflict, can not pull '#{tar_branch}' ."
+            end
+          end
+        end
+        unless tar_revisions.heads.key? tar_branch
+          raise StandardError, "can not found branch '#{tar_branch}' ."
+        end
+        tar_cur_revision = tar_revisions.heads[tar_branch]
+        tmp_revision = tar_cur_revision
+        ancestor_id = 0
+        until tmp_revision.nil?
+          if revisions.rev_map.key? tmp_revision.id
+            ancestor_id = tmp_revision.id
+            break
+          else
+            revisions.rev_map.store(tmp_revision.id, tmp_revision)
+            tmp_now_revision = tmp_revision
+            tmp_revision = tmp_revision.p_node
+          end
+        end
+        if tmp_now_revision.nil?
+          raise StandardError, "#{tar_branch} already up to date"
+        end
+        raise StandardError, 'can not find common ancestor' if ancestor_id == 0
+        # update revisions.heads {tar_branch:tar_cur_revision}
+        revisions.heads.store(tar_branch, tar_cur_revision)
+        tmp_now_revision.p_node = revisions.rev_map[ancestor_id]
+
+        sync_rev revisions
+        # combine manifest
+        Dir.foreach(File.join(KRON_DIR, 'tmp', 'manifest')) do |file|
+          unless File.exist?(File.join(MANIFEST_DIR, file))
+            FileUtils.cp File.join(KRON_DIR, 'tmp', 'manifest', file), File.join(MANIFEST_DIR, file)
+          end
+        end
+        # combine changeset
+        Dir.foreach(File.join(KRON_DIR, 'tmp', 'changeset')) do |file|
+          unless File.exist?(File.join(CHANGESET_DIR, file))
+            FileUtils.cp File.join(KRON_DIR, 'tmp', 'changeset', file), File.join(CHANGESET_DIR, file)
+          end
+        end
+        #combine objects
+        Dir.foreach(File.join(KRON_DIR, 'tmp', 'objects')) do |subdir|
+          if File.exist?(File.join(OBJECTS_DIR, subdir))
+            if subdir != '.' && subdir != '..'
+              Dir.foreach(File.join(KRON_DIR, 'tmp', 'objects', subdir)) do |file|
+                unless File.exist?(File.join(OBJECTS_DIR, subdir, file))
+                  FileUtils.cp File.join(KRON_DIR, 'tmp', 'objects', subdir, file), File.join(OBJECTS_DIR, subdir, file)
+                end
+              end
+            end
+          else
+            FileUtils.cp_r KRON_DIR + 'tmp/objects/' + subdir + '/', OBJECTS_DIR + subdir
+          end
+        end
+      ensure
+        FileUtils.rm_rf File.join(KRON_DIR, 'tmp')
+        FileUtils.rm_rf File.join(KRON_DIR, tmp_name)
       end
-      FileUtils.rm_rf File.join(KRON_DIR, 'tmp')
     end
 
     def push(repo_uri, tar_branch)
@@ -650,11 +791,23 @@ module Kron
       revisions = load_rev
       cur_stage = load_stage
       cur_index = load_index
+      tar_revision = nil 
       if revisions.current[0].nil?
         raise StandardError, "HEAD detached at #{revisions.current[1].id}"
       end
+
       unless revisions.heads.key? branch_name
-        raise StandardError, "branch #{branch_name} not found"
+        matched = []
+        revisions.rev_map.each_key do |id|
+          matched << id unless (id =~ /#{branch_name}/).nil?
+        end
+        if matched.empty?
+          raise StandardError, "branch or revision #{branch_name} not found"
+        elsif matched.size > 1
+          raise StandardError, "revision '#{branch_name}' is ambiguous"
+        elsif matched.size == 1
+          tar_revision = revisions.rev_map[matched[0]]
+        end
       end
 
       unless force
@@ -674,7 +827,7 @@ module Kron
         end
       end
       cur_revision = revisions.current[1]
-      tar_revision = revisions.heads[branch_name]
+      tar_revision = tar_revision.nil? ? revisions.heads[branch_name] : tar_revision
       tar_manifest = load_manifest(tar_revision.id)
       conflict_files = []
       tar_manifest.each_pair do |tar_file_name, tar_file_paras|
@@ -729,7 +882,8 @@ module Kron
       File.rename(MANIFEST_DIR + 'new_manifest.tmp', MANIFEST_DIR + rev_id)
       File.rename(CHANGESET_DIR + 'new_changeset.tmp', CHANGESET_DIR + rev_id)
       sync_rev(revisions)
-      checkout(revisions.current[0])
+      # checkout(revisions.current[0])
+      recover_wd(mf)
     end
 
     def serve(port, token, multiple_serve = false, quiet = false)
@@ -759,7 +913,7 @@ module Kron
       if branch
         brch = load_rev.heads[branch]
         if brch
-          fetch_branch_logs(brch, Array.new)
+          fetch_branch_logs(brch, [])
         else
           puts "branch '#{branch}' not found"
         end
@@ -790,7 +944,7 @@ module Kron
       branch ||= rvs.current[0] unless branch
       brch = rvs.heads[branch]
       if brch
-        fetch_branch_logs(brch, Array.new, 1)
+        fetch_branch_logs(brch, [], 1)
       else
         puts "on branch #{branch}, no commit history."
       end

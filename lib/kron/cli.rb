@@ -203,7 +203,11 @@ module Kron
     command [:diff, :compare] do |c|
       c.action do |_global_options, _options, args|
         assert_repo_exist
+        if args.size > 2
+          help_now!("too many args, #{args.size} is given but less than 2 is required")
+        end
         # TODO: invoke 'kron diff <args[0]> [<args[1]>]'
+        diff(args)
       end
     end
 
@@ -321,12 +325,13 @@ module Kron
 
     desc 'Fetch from and integrate with another repository'
     arg '<repo_uri>', :required
+    arg '<branch>'
     command [:pull, :fetch] do |c|
       c.action do |_global_options, _options, repo_uri|
         help_now!('repo_uri is required') if repo_uri.empty?
         assert_repo_exist
-        pull(repo_uri[0], repo_uri[1])
-        exit_now! 'Command not implemented'
+        deliver(repo_uri[0])
+        pull(repo_uri[0], repo_uri.length == 1 ? nil : repo_uri[1])
       end
     end
 
