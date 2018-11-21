@@ -6,9 +6,13 @@ Welcome to the **Kron** world! Kron is a distribute version control system which
 
 ## Installation
 
+Change directory:
+
+    $ cd /path/to/kron/bin/
+
 Execute the setup bash (permission may required):
 
-    $ bin/setup
+    $ ./setup
 
 Check usability in your command line:
 
