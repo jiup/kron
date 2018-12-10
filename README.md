@@ -50,7 +50,7 @@ $ kron remove file_name
 In order to commit changes, execute the following command with commit message
 
 ```
-$ kron commit file_name -m 'commit message'
+$ kron commit -m 'commit message'
 ```
 
 A single Kron repository can maintain multiple branches of development. To create a new branch named branch_name, use
