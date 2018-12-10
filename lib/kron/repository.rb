@@ -80,8 +80,12 @@ module Kron
         end
         FileUtils.rm_rf File.join(BASE_DIR, tmp_name)
       end
-      mf = load_manifest load_rev.current[1].id
-      recover_wd(mf)
+      begin
+        mf = load_manifest load_rev.current[1].id
+        recover_wd(mf)
+      rescue Exception => e
+        puts 'you cloned an empty repository!'
+      end
     end
 
     def add(file_path, force = false, recursive = true, verbose = true)
@@ -90,7 +94,7 @@ module Kron
       file_paths = []
       if File.directory? file_path
         if recursive
-          file_paths = Dir[File.join(file_path, '**', '*')].reject { |fn| File.directory?(fn) }
+          file_paths = Dir[File.join(file_path, '**', '*')].reject {|fn| File.directory?(fn)}
         else
           Dir.foreach(file_path) do |path|
             file_paths << path if File.file? path
@@ -145,7 +149,7 @@ module Kron
       file_paths = []
       if File.directory? file_path
         if recursive
-          file_paths = Dir[File.join(file_path, '**', '*')].reject { |fn| File.directory?(fn) }
+          file_paths = Dir[File.join(file_path, '**', '*')].reject {|fn| File.directory?(fn)}
         else
           raise StandardError, "Not removing '#{file_path}', recursively without -r"
         end
@@ -204,7 +208,7 @@ module Kron
         raise StandardError, "HEAD detached at #{revisions.current[1].id}"
       end
 
-      hashes = Set.new index.each_pair.collect { |kv| kv[1][0] }
+      hashes = Set.new index.each_pair.collect {|kv| kv[1][0]}
       Dir.glob(STAGE_DIR + '*/*').each do |file_hash|
         file_hash_ab = file_hash.split('/')[-2..-1].join('/')
 
@@ -223,9 +227,9 @@ module Kron
       # add Changeset
       cs = Kron::Domain::Changeset.new
       cs.rev_id = 'new_changeset.tmp'
-      stage.to_add.each { |f| cs.put('@added_files', f) }
-      stage.to_modify.each { |f| cs.put('@modified_files', f) }
-      stage.to_delete.each { |f| cs.put('@deleted_files', f) }
+      stage.to_add.each {|f| cs.put('@added_files', f)}
+      stage.to_modify.each {|f| cs.put('@modified_files', f)}
+      stage.to_delete.each {|f| cs.put('@deleted_files', f)}
       cs.commit_message = message
       cs.author = author || Kron::Helper::Configurator.instance['author']
       cs.timestamp = Time.now.to_i
@@ -328,7 +332,7 @@ module Kron
         end
 
         wd = SortedSet.new
-        Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
+        Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
         tracked = Set.new
         index.each_pair do |file_path, args|
           tracked << file_path
@@ -379,7 +383,7 @@ module Kron
         unless overwritten.empty?
           puts 'The following untracked working directory files would be overwritten by checkout:'
           puts
-          overwritten.each { |path| puts "        #{path}".colorize(color: :red) }
+          overwritten.each {|path| puts "        #{path}".colorize(color: :red)}
           puts
           puts 'Please move or remove them before you switch branches.'
           return
@@ -387,8 +391,8 @@ module Kron
       end
 
 
-      now_files = Set.new index.each_pair.collect { |kv| kv[0] }
-      target_files = Set.new mf.each_pair.collect { |kv| kv[0] }
+      now_files = Set.new index.each_pair.collect {|kv| kv[0]}
+      target_files = Set.new mf.each_pair.collect {|kv| kv[0]}
       to_rm_files = now_files - target_files
       to_rm_files.each do |file|
         FileUtils.rm_f File.join(WORKING_DIR, file)
@@ -425,7 +429,7 @@ module Kron
       index = load_index
       stage = load_stage
       tracked = Set.new
-      index.each_pair { |file_path, _args| tracked << file_path }
+      index.each_pair {|file_path, _args| tracked << file_path}
       n_stage_modified = []
       n_stage_deleted = []
       tracked.each do |p|
@@ -436,7 +440,7 @@ module Kron
         end
       end
       wd = SortedSet.new
-      Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
+      Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
       untracked = wd - tracked
 
       # exclude by parsing .kronignore file
@@ -465,9 +469,9 @@ module Kron
         puts 'Changes to be committed:'
         puts '  (use \'kron rm -c stage\' to unstage)'
         puts
-        stage.to_add.each { |f| puts "        new file:   #{f}".colorize(color: :green) }
-        stage.to_modify.each { |f| puts "        modified:   #{f}".colorize(color: :yellow) }
-        stage.to_delete.each { |f| puts "        deleted:   #{f}".colorize(color: :red) }
+        stage.to_add.each {|f| puts "        new file:   #{f}".colorize(color: :green)}
+        stage.to_modify.each {|f| puts "        modified:   #{f}".colorize(color: :yellow)}
+        stage.to_delete.each {|f| puts "        deleted:   #{f}".colorize(color: :red)}
         puts
       end
       not_staged = n_stage_modified.empty? && n_stage_deleted.empty?
@@ -476,15 +480,15 @@ module Kron
         puts '  (use \'kron add <file>...\' to update what will be committed)'
         puts '  (use \'kron checkout -f\' to discard changes in working directory)'
         puts
-        n_stage_modified.each { |f| puts "        modified:   #{f}".colorize(color: :red) }
-        n_stage_deleted.each { |f| puts "        deleted:   #{f}".colorize(color: :red) }
+        n_stage_modified.each {|f| puts "        modified:   #{f}".colorize(color: :red)}
+        n_stage_deleted.each {|f| puts "        deleted:   #{f}".colorize(color: :red)}
         puts
       end
       unless untracked.empty?
         puts 'Untracked files:'
         puts '  (use \'kron add <file>...\' to include in what will be committed)'
         puts
-        untracked.each { |f| puts "        #{f}".colorize(color: :red) }
+        untracked.each {|f| puts "        #{f}".colorize(color: :red)}
         puts
       end
       if nothing_to_commit
@@ -504,9 +508,9 @@ module Kron
       index = load_index
       if index.each_pair.size > 0
         puts 'Tracked files:'
-        size_limit = index.each_pair.map { |e| e[1][1].to_s.length }.max
-        path_limit = index.each_pair.map { |e| e[0].to_s.length }.max
-        index.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
+        size_limit = index.each_pair.map {|e| e[1][1].to_s.length}.max
+        path_limit = index.each_pair.map {|e| e[0].to_s.length}.max
+        index.each_pair.sort_by {|e| e[0]}.each do |file_path, attrs|
           print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
           print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
           print "  #{(attrs[1] + 'B').rjust(size_limit + 1)}".colorize(color: :blue)
@@ -581,9 +585,9 @@ module Kron
       end
       unless common_files.empty?
         puts 'Same files:'
-        size_limit = common_files.each_pair.map { |e| e[1][1].to_s.length }.max
-        path_limit = common_files.each_pair.map { |e| e[0].to_s.length }.max
-        common_files.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
+        size_limit = common_files.each_pair.map {|e| e[1][1].to_s.length}.max
+        path_limit = common_files.each_pair.map {|e| e[0].to_s.length}.max
+        common_files.each_pair.sort_by {|e| e[0]}.each do |file_path, attrs|
           print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
           print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
           print "  #{(attrs[1] + 'B').rjust(size_limit + 1)}".colorize(color: :blue)
@@ -594,9 +598,9 @@ module Kron
       end
       unless conflict_files.empty?
         puts 'Conflict files:'
-        size_limit = conflict_files.each_pair.map { |e| e[1][1].to_s.length }.max
-        path_limit = conflict_files.each_pair.map { |e| e[0].to_s.length }.max
-        conflict_files.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
+        size_limit = conflict_files.each_pair.map {|e| e[1][1].to_s.length}.max
+        path_limit = conflict_files.each_pair.map {|e| e[0].to_s.length}.max
+        conflict_files.each_pair.sort_by {|e| e[0]}.each do |file_path, attrs|
           print "    #{Time.at(one_mf[file_path][2].to_i).strftime('%b %d %R')}".colorize(color: :green)
           print "  #{Time.at(one_mf[file_path][3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
           print "  #{(one_mf[file_path][1] + 'B').rjust(size_limit + 1)}".colorize(color: :blue)
@@ -616,9 +620,9 @@ module Kron
         print 'Files only in '
         print "#{two_revision[0..DEFAULT_ABBREV]}".colorize(color: :light_cyan)
         puts ':'
-        size_limit = added_files.each_pair.map { |e| e[1][1].to_s.length }.max
-        path_limit = added_files.each_pair.map { |e| e[0].to_s.length }.max
-        added_files.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
+        size_limit = added_files.each_pair.map {|e| e[1][1].to_s.length}.max
+        path_limit = added_files.each_pair.map {|e| e[0].to_s.length}.max
+        added_files.each_pair.sort_by {|e| e[0]}.each do |file_path, attrs|
           print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
           print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
           print "  #{(attrs[1] + 'B').rjust(size_limit + 1)}".colorize(color: :blue)
@@ -631,9 +635,9 @@ module Kron
         print 'Files only in '
         print "#{one_revision[0..DEFAULT_ABBREV]}".colorize(color: :light_cyan)
         puts ':'
-        size_limit = deleted_files.each_pair.map { |e| e[1][1].to_s.length }.max
-        path_limit = deleted_files.each_pair.map { |e| e[0].to_s.length }.max
-        deleted_files.each_pair.sort_by { |e| e[0] }.each do |file_path, attrs|
+        size_limit = deleted_files.each_pair.map {|e| e[1][1].to_s.length}.max
+        path_limit = deleted_files.each_pair.map {|e| e[0].to_s.length}.max
+        deleted_files.each_pair.sort_by {|e| e[0]}.each do |file_path, attrs|
           print "    #{Time.at(attrs[2].to_i).strftime('%b %d %R')}".colorize(color: :green)
           print "  #{Time.at(attrs[3].to_i).strftime('%b %d %R')}".colorize(color: :yellow)
           print "  #{(attrs[1] + 'B').rjust(size_limit + 1)}".colorize(color: :blue)
@@ -678,7 +682,7 @@ module Kron
         end
 
         wd = SortedSet.new
-        Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
+        Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
         tracked = Set.new
         index.each_pair do |file_path, args|
           tracked << file_path
@@ -828,7 +832,7 @@ module Kron
         end
 
         wd = SortedSet.new
-        Dir[File.join('**', '*')].reject { |fn| File.directory?(fn) }.each { |f| wd << f }
+        Dir[File.join('**', '*')].reject {|fn| File.directory?(fn)}.each {|f| wd << f}
         tracked = Set.new
         cur_index.each_pair do |file_path, args|
           tracked << file_path
@@ -879,8 +883,8 @@ module Kron
       end
       cs = Kron::Domain::Changeset.new
       cs.rev_id = 'new_changeset.tmp'
-      to_add.each { |f| cs.put('@added_files', f) }
-      to_modify.each { |f| cs.put('@modified_files', f) }
+      to_add.each {|f| cs.put('@added_files', f)}
+      to_modify.each {|f| cs.put('@modified_files', f)}
       cs.commit_message = "merge #{branch_name}"
       cs.author = author
       cs.timestamp = Time.now.to_i
@@ -1015,7 +1019,7 @@ module Kron
           return
         end
       end
-      size_limit = rvs.heads.keys.each.map { |e| e.length }.max
+      size_limit = rvs.heads.keys.each.map {|e| e.length}.max
       if rvs.heads == {}
         print rvs.current[0].to_s
         puts ' <- HEAD'.colorize(color: :yellow, mode: :bold)
